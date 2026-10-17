@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090d1d">
+<title>ONLY UNBROKEN · Local 3D Studio V10</title>
+<style>
+:root{
+  --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
+  --text:#f7f8ff; --muted:#9da9cb; --purple:#7457ff; --blue:#2e8cff;
+  --pink:#e24ccf; --cyan:#51d8ff; --green:#74e6bc; --red:#ff7c88;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 15% 0%,#17266a 0,transparent 25%),
+    radial-gradient(circle at 90% 10%,#4b1854 0,transparent 20%),
+    linear-gradient(180deg,#0a1025,#060913);
+  color:var(--text); overflow:hidden;
+}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{height:100%;display:grid;grid-template-rows:72px 1fr}
+header{
+  display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;
+  padding:0 18px;background:rgba(8,13,30,.9);border-bottom:1px solid #202b57;
+  backdrop-filter:blur(18px);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,var(--purple),var(--pink));display:grid;place-items:center;font-weight:950;box-shadow:0 12px 30px #7457ff40}
+.brand b{font-size:14px}.brand small{display:block;font-size:9px;color:#8f9ac0;margin-top:2px;letter-spacing:.08em}
+.topnav{justify-self:center;display:flex;gap:6px;padding:5px;background:#0e1533;border:1px solid #283463;border-radius:18px}
+.topnav button{border:0;background:transparent;color:#b7c0dc;padding:9px 14px;border-radius:13px;font-size:12px}
+.topnav button.active{color:white;background:linear-gradient(135deg,var(--purple),var(--blue));font-weight:800}
+.headActions{display:flex;gap:8px}
+.headActions button{border:1px solid #2c3768;background:#121a3c;color:white;border-radius:13px;padding:10px 13px;font-size:11px}
+.headActions .primary{background:linear-gradient(135deg,var(--purple),var(--pink));border:0;font-weight:800}
+
+.workspace{min-height:0;display:grid;grid-template-columns:78px minmax(0,1fr) 310px;gap:12px;padding:12px}
+.rail{
+  background:linear-gradient(180deg,#10183a,#0b1026);border:1px solid #25305d;border-radius:24px;
+  padding:9px 7px;display:flex;flex-direction:column;gap:6px;box-shadow:0 20px 50px #0005
+}
+.tool{min-height:62px;border:1px solid transparent;background:transparent;color:#9aa6c9;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:9px}
+.tool span:first-child{font-size:19px}
+.tool.active{background:linear-gradient(135deg,#6d54ff,#384dff);color:white;box-shadow:0 10px 26px #514cff45}
+.spacer{flex:1}
+
+.stage{
+  min-width:0;position:relative;border:1px solid #25305d;border-radius:28px;
+  background:linear-gradient(180deg,#111a39,#0b1023);box-shadow:0 20px 55px #0005;overflow:hidden
+}
+.stagebar{position:absolute;z-index:20;left:16px;right:16px;top:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
+.stageRight{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.stagebar>*{pointer-events:auto}
+.viewSwitcher,.faceSwitcher,.stageActions{display:flex;gap:5px;padding:5px;background:#f2f4f8e8;border:1px solid #dce1ee;border-radius:16px;box-shadow:0 8px 25px #0002}
+.viewSwitcher button,.faceSwitcher button,.stageActions button{border:0;background:transparent;color:#566079;border-radius:11px;padding:8px 11px;font-size:11px}
+.viewSwitcher button.active,.faceSwitcher button.active{background:#fff;color:#1a2136;font-weight:800;box-shadow:0 5px 14px #0001}
+.artboard{
+  position:absolute;inset:68px 18px 70px;border-radius:24px;background:
+  radial-gradient(circle at 50% 42%,#fff 0,#f4f5f9 58%,#e9ebf2 100%);
+  border:1px solid #d9deeb;overflow:hidden;box-shadow:inset 0 1px 0 #fff;
+}
+.gridbg{
+  position:absolute;inset:0;display:none;pointer-events:none;
+  background-image:linear-gradient(#7d85a515 1px,transparent 1px),linear-gradient(90deg,#7d85a515 1px,transparent 1px);
+  background-size:30px 30px
+}
+.garmentWrap{
+  position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);
+  width:min(63%,560px);aspect-ratio:530/690;
+  filter:drop-shadow(0 26px 18px #27304425)
+}
+#garmentCanvas{position:absolute;inset:0;width:100%;height:100%}
+#designArea{position:absolute;inset:0;touch-action:none}
+.designLayer{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%) rotate(0deg);touch-action:none}
+.designLayer img{display:block;width:100%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.designLayer.selected{outline:2px dashed #755cff;outline-offset:5px}
+.handle{position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid #6d54ff;box-shadow:0 5px 14px #0003;display:none}
+.designLayer.selected .handle{display:block}
+.resize{right:-12px;bottom:-12px}.rotate{right:-12px;top:-12px}.delete{left:-12px;top:-12px;background:#ffeff1;border-color:#ff6474;color:#d42335;font-size:11px;display:none!important}
+.designLayer.selected .delete{display:grid!important;place-items:center}
+.dragLabel{display:none;position:absolute;left:50%;bottom:-27px;transform:translateX(-50%);font-size:9px;color:#fff;background:#171d36db;padding:4px 7px;border-radius:8px;white-space:nowrap}
+.designLayer.selected .dragLabel{display:block}
+.stageHint{position:absolute;left:18px;bottom:18px;z-index:20;color:#cad1e7;background:#0e1533e8;border:1px solid #283463;border-radius:14px;padding:10px 12px;font-size:10px}
+
+.panel{
+  background:linear-gradient(180deg,#0e1533,#090f24);border:1px solid #25305d;border-radius:24px;
+  padding:16px;overflow:auto;box-shadow:0 20px 50px #0005
+}
+.panel h2{margin:0 0 4px;font-size:20px}.panel p{margin:0;color:var(--muted);font-size:10px;line-height:1.5}
+.card{margin-top:14px;padding:13px;border:1px solid #27335f;border-radius:17px;background:linear-gradient(180deg,#121b3e,#0d1430)}
+.cardTitle{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:#8491ba;margin-bottom:10px}
+label{font-size:10px;color:#cbd2e7;display:block;margin:9px 0 5px}
+input[type=text],select{width:100%;background:#0c132d;color:white;border:1px solid #304071;border-radius:12px;padding:10px;outline:none}
+input[type=color]{width:100%;height:42px;background:#0c132d;border:1px solid #304071;border-radius:12px;padding:3px}
+input[type=range]{width:100%;accent-color:#7457ff}
+input[type=file]{width:100%;font-size:10px;color:#9aa6c9}
+input[type=file]::file-selector-button{border:1px solid #344577;background:#151f45;color:white;border-radius:11px;padding:9px;margin-right:6px}
+.btn{border:1px solid #324274;background:#151f45;color:#eef2ff;border-radius:12px;padding:10px 11px;font-size:10px}
+.btn.primary{border:0;background:linear-gradient(135deg,#7457ff,#df49c7);font-weight:800}.btn.wide{width:100%}
+.row{display:flex;gap:7px}.row>*{flex:1}
+.swatches{display:flex;gap:7px;flex-wrap:wrap}
+.swatch{width:30px;height:30px;border-radius:50%;border:2px solid #46517b;padding:0}.swatch.active{outline:2px solid #a99aff;outline-offset:2px}
+.uploadBox{border:1px dashed #536190;border-radius:15px;padding:18px 10px;text-align:center;color:#a5afd0;font-size:10px}
+.templateGrid,.libraryGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.template,.libraryItem{height:86px;border:1px solid #2e3b6b;border-radius:14px;background:#111a39;color:#eef2ff;display:grid;place-items:center;text-align:center;padding:7px;font-size:10px;overflow:hidden}
+.template strong{font-size:13px}.libraryItem img{max-width:100%;max-height:62px;object-fit:contain}
+.layerItem{display:flex;align-items:center;gap:8px;border:1px solid #293665;background:#101837;border-radius:13px;padding:8px;margin-bottom:7px}
+.layerThumb{width:38px;height:38px;border-radius:9px;background:#0a1026;display:grid;place-items:center;overflow:hidden}.layerThumb img{max-width:100%;max-height:100%}
+.layerText{min-width:0;flex:1;font-size:10px}.layerText b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.layerText span{color:#8491ba}
+.statusDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#74e6bc;margin-right:5px}
+.pencilPad{display:block;width:100%;aspect-ratio:4/3;border-radius:14px;background:#f7f7fb;touch-action:none;border:1px solid #cfd5e4}
+
+@media(max-width:900px){
+  header{grid-template-columns:auto 1fr auto}.brand small{display:none}.topnav{justify-self:end}.topnav button{padding:8px 10px}
+  .workspace{grid-template-columns:68px minmax(0,1fr) 278px;gap:8px;padding:8px}
+  .rail,.panel,.stage{border-radius:20px}
+  .tool{min-height:54px}
+}
+
+/* RESTORE patch */
+.rail .tool{justify-content:center}
+.rail .tool span:first-child:last-child{font-size:13px;font-weight:700}
+.tool span+span{display:none}
+.stageActions{display:flex;gap:8px;flex-wrap:wrap}
+.artboard.view3d{display:block!important;perspective:1800px;background:radial-gradient(circle at 50% 30%,#ffffff 0%,#edf1f7 58%,#dce2ee 100%)}
+.artboard.view3d .garmentWrap{transform:translate(-50%,-50%) scale(1.035);filter:drop-shadow(0 28px 34px rgba(0,0,0,.18));}
+.artboard.view3d .garmentWrap::after{content:"";position:absolute;left:18%;right:18%;bottom:-3%;height:8%;background:radial-gradient(ellipse at center, rgba(0,0,0,.20), rgba(0,0,0,0) 70%);filter:blur(10px);z-index:-1}
+#artboard.view3d #designArea{pointer-events:auto}
+#artboard.view3d #garmentCanvas{border-radius:18px}
+.topnav button,.stagebar .viewSwitcher button,.stageActions button,.headActions button,.btn,.template,.swatch{transition:all .18s ease}
+
+
+/* V10 local 3D: no external model or library needed */
+.local3d{
+  display:none;
+  position:absolute;
+  inset:68px 18px 70px;
+  z-index:12;
+  border-radius:24px;
+  overflow:hidden;
+  border:1px solid #d9deeb;
+  background:radial-gradient(circle at 50% 42%,#ffffff 0,#f4f5f9 58%,#e6eaf2 100%);
+  perspective:1500px;
+  touch-action:none;
+  user-select:none;
+}
+.local3dScene{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  perspective:1500px;
+  touch-action:none;
+}
+.hoodieCube{
+  position:relative;
+  width:min(58vw,530px);
+  aspect-ratio:530/690;
+  transform-style:preserve-3d;
+  transform:rotateX(-2deg) rotateY(0deg);
+  transition:transform .32s cubic-bezier(.2,.7,.2,1);
+  filter:drop-shadow(0 28px 26px rgba(20,28,48,.18));
+  touch-action:none;
+}
+.hoodieCube.dragging{transition:none}
+.face3d{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  transform-style:preserve-3d;
+  pointer-events:none;
+}
+.front3d{transform:rotateY(0deg) translateZ(115px)}
+.right3d{transform:rotateY(90deg) translateZ(115px)}
+.back3d{transform:rotateY(180deg) translateZ(115px)}
+.left3d{transform:rotateY(-90deg) translateZ(115px)}
+.local3dHelp{
+  position:absolute;
+  left:14px;
+  right:14px;
+  bottom:14px;
+  z-index:4;
+  width:max-content;
+  max-width:calc(100% - 28px);
+  margin:auto;
+  padding:9px 12px;
+  border-radius:12px;
+  color:#eef2ff;
+  background:#10172fe8;
+  border:1px solid #283463;
+  font-size:10px;
+  text-align:center;
+  pointer-events:none;
+}
+.artboard.view3d{display:none!important}
+
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="logo">OU</div><div><b>ONLY UNBROKEN</b><small>CUSTOMWEAR · LOCAL 3D STUDIO V10</small></div></div>
+  <nav class="topnav">
+    <button class="active" data-tab="design">Diseño</button>
+    <button data-tab="library">Biblioteca</button>
+    <button data-tab="templates">Plantillas</button>
+    <button data-tab="settings">Ajustes</button>
+  </nav>
+  <div class="headActions"><button id="saveBtn">Guardar</button><button class="primary" id="exportBtn">Exportar</button></div>
+</header>
+
+<div class="workspace">
+  <aside class="rail">
+    <button class="tool active" data-tool="product"><span>Producto</span></button>
+    <button class="tool" data-tool="colors"><span>Colores</span></button>
+    <button class="tool" data-tool="text"><span>Textos</span></button>
+    <button class="tool" data-tool="images"><span>Imágenes</span></button>
+    <button class="tool" data-tool="pencil"><span>Apple Pencil</span></button>
+    <button class="tool" data-tool="layers"><span>Capas</span></button>
+    <div class="spacer"></div>
+    <button class="tool" id="undoBtn"><span>Deshacer</span></button>
+  </aside>
+
+  <main class="stage">
+    <div class="stagebar">
+      <div class="viewSwitcher"><button id="editViewBtn" class="active">Editor fácil</button><button id="view3dBtn">Modelo 3D</button></div>
+      <div class="stageRight">
+        <div class="faceSwitcher">
+          <button class="active" data-face="front">Frente</button>
+          <button data-face="back">Espalda</button>
+          <button data-face="left">Izquierda</button>
+          <button data-face="right">Derecha</button>
+        </div>
+        <div class="stageActions"><button id="resetBtn">Restablecer</button><button id="centerBtn">Centrar diseño</button></div>
+      </div>
+    </div>
+    <div class="artboard" id="artboard">
+      <div class="gridbg" id="gridbg"></div>
+      <div class="garmentWrap" id="garmentWrap">
+        <canvas id="garmentCanvas" width="530" height="690"></canvas>
+        <div id="designArea"></div>
+      </div>
+    </div>
+    
+    <div class="local3d" id="local3d">
+      <div class="local3dScene" id="local3dScene">
+        <div class="hoodieCube" id="hoodieCube">
+          <canvas class="face3d front3d" id="face3d-front" width="530" height="690"></canvas>
+          <canvas class="face3d back3d" id="face3d-back" width="530" height="690"></canvas>
+          <canvas class="face3d left3d" id="face3d-left" width="530" height="690"></canvas>
+          <canvas class="face3d right3d" id="face3d-right" width="530" height="690"></canvas>
+        </div>
+      </div>
+      <div class="local3dHelp">Arrastra sobre la sudadera para girarla. Frente, espalda y lados usan los mismos archivos del Editor fácil.</div>
+    </div>
+    <div class="stageHint" id="stageHint"><span class="statusDot"></span>Arrastra el diseño con el dedo o Apple Pencil. Usa las bolitas para girar y agrandar.</div>
+  </main>
+
+  <aside class="panel" id="panel"></aside>
+</div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const panel=$('#panel'), designArea=$('#designArea'), garmentCanvas=$('#garmentCanvas'), garmentCtx=garmentCanvas.getContext('2d');
+const local3d=$('#local3d'), local3dScene=$('#local3dScene'), hoodieCube=$('#hoodieCube');
+const hoodieSources={front:'hoodie_front.png',back:'hoodie_back.png',left:'hoodie_left.png',right:'hoodie_right.png'};
+const hoodieImages=Object.fromEntries(Object.entries(hoodieSources).map(([k,v])=>{const im=new Image();im.src=v;return [k,im]}));
+let hoodieColor='#e1e2e6';
+let activeTool='product', activeTab='design', layers=[], selectedId=null, seq=1, library=[];
+let viewMode='edit', showGrid=false, backgroundMode='light', currentFace='front';
+let yaw3d=0, dragging3d=false, dragStartX=0, dragStartYaw=0;
+const faceAngles={front:0,right:-90,back:180,left:90};
+const faceCanvas3D={front:$('#face3d-front'),back:$('#face3d-back'),left:$('#face3d-left'),right:$('#face3d-right')};
+const layerImgCache=new Map();
+const stateKey='only_unbroken_local3d_v10';
+
+function hexToRgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
+function faceName(face){return ({front:'Frente',back:'Espalda',left:'Lado izquierdo',right:'Lado derecho'})[face]||'Frente'}
+function currentGarment(){return hoodieImages[currentFace]||hoodieImages.front}
+function renderGarment(){
+ const hoodieImg=currentGarment();
+ if(!hoodieImg.complete||!hoodieImg.naturalWidth)return;
+ garmentCtx.clearRect(0,0,530,690);
+ garmentCtx.drawImage(hoodieImg,0,0,530,690);
+ const img=garmentCtx.getImageData(0,0,530,690),d=img.data,[r,g,b]=hexToRgb(hoodieColor);
+ for(let i=0;i<d.length;i+=4){
+   if(d[i+3]===0)continue;
+   const lum=(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)/255;
+   const shade=Math.max(.3,Math.min(1.16,.2+lum*1.02));
+   const detail=(lum-.62)*18;
+   d[i]=Math.max(0,Math.min(255,r*shade+detail));
+   d[i+1]=Math.max(0,Math.min(255,g*shade+detail));
+   d[i+2]=Math.max(0,Math.min(255,b*shade+detail));
+ }
+ garmentCtx.putImageData(img,0,0);
+}
+Object.values(hoodieImages).forEach(im=>im.onload=()=>{if(currentGarment().complete) renderGarment();renderAll3D()});
+
+
+function tintGarmentToCanvas(face,targetCanvas){
+ const img=hoodieImages[face];
+ if(!img || !img.complete || !img.naturalWidth)return;
+ const tx=targetCanvas.getContext('2d');
+ tx.clearRect(0,0,530,690);
+ tx.drawImage(img,0,0,530,690);
+ const data=tx.getImageData(0,0,530,690),d=data.data,[r,g,b]=hexToRgb(hoodieColor);
+ for(let i=0;i<d.length;i+=4){
+   if(d[i+3]===0)continue;
+   const lum=(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)/255;
+   const shade=Math.max(.3,Math.min(1.16,.2+lum*1.02));
+   const detail=(lum-.62)*18;
+   d[i]=Math.max(0,Math.min(255,r*shade+detail));
+   d[i+1]=Math.max(0,Math.min(255,g*shade+detail));
+   d[i+2]=Math.max(0,Math.min(255,b*shade+detail));
+ }
+ tx.putImageData(data,0,0);
+
+ const faceLayers=layers.filter(l=>(l.face||'front')===face);
+ faceLayers.forEach(l=>{
+   let im=layerImgCache.get(l.data);
+   if(!im){
+     im=new Image();
+     im.onload=()=>renderAll3D();
+     im.src=l.data;
+     layerImgCache.set(l.data,im);
+   }
+   if(!im.complete || !im.naturalWidth)return;
+   const w=l.w/100*530;
+   const h=w/(l.aspect||1);
+   const x=l.x/100*530;
+   const y=l.y/100*690;
+   tx.save();
+   tx.translate(x,y);
+   tx.rotate((l.rot||0)*Math.PI/180);
+   tx.drawImage(im,-w/2,-h/2,w,h);
+   tx.restore();
+ });
+}
+
+function renderAll3D(){
+ Object.keys(faceCanvas3D).forEach(face=>tintGarmentToCanvas(face,faceCanvas3D[face]));
+}
+
+function apply3DRotation(animate=true){
+ if(!hoodieCube)return;
+ hoodieCube.classList.toggle('dragging',!animate);
+ hoodieCube.style.transform=`rotateX(-2deg) rotateY(${yaw3d}deg)`;
+}
+
+function snap3DToFace(face,animate=true){
+ yaw3d=faceAngles[face] ?? 0;
+ apply3DRotation(animate);
+}
+
+function normalizeYaw(v){
+ let n=((v+180)%360+360)%360-180;
+ return n;
+}
+
+function nearestFaceFromYaw(v){
+ const n=normalizeYaw(v);
+ const candidates=[
+   ['front',0],['right',-90],['left',90],['back',180],['back',-180]
+ ];
+ let best='front',dist=999;
+ for(const [f,a] of candidates){
+   const d=Math.abs(n-a);
+   if(d<dist){dist=d;best=f}
+ }
+ return best;
+}
+
+local3dScene.addEventListener('pointerdown',e=>{
+ if(viewMode!=='3d')return;
+ dragging3d=true;
+ dragStartX=e.clientX;
+ dragStartYaw=yaw3d;
+ hoodieCube.classList.add('dragging');
+ local3dScene.setPointerCapture?.(e.pointerId);
+ e.preventDefault();
+});
+local3dScene.addEventListener('pointermove',e=>{
+ if(!dragging3d || viewMode!=='3d')return;
+ const rect=local3dScene.getBoundingClientRect();
+ yaw3d=dragStartYaw+(e.clientX-dragStartX)/Math.max(260,rect.width)*150;
+ apply3DRotation(false);
+ e.preventDefault();
+});
+function end3DDrag(){
+ if(!dragging3d)return;
+ dragging3d=false;
+ hoodieCube.classList.remove('dragging');
+ const face=nearestFaceFromYaw(yaw3d);
+ currentFace=face;
+ $$('.faceSwitcher [data-face]').forEach(b=>b.classList.toggle('active',b.dataset.face===face));
+ snap3DToFace(face,true);
+ renderPanel();
+ saveState();
+ notify('Modelo 3D · '+faceName(face).toLowerCase());
+}
+local3dScene.addEventListener('pointerup',end3DDrag);
+local3dScene.addEventListener('pointercancel',end3DDrag);
+
+function notify(msg){$('#stageHint').innerHTML='<span class="statusDot"></span>'+msg}
+function setTool(tool){
+ activeTool=tool; activeTab='design';
+ $$('.tool[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===tool));
+ $$('.topnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab==='design'));
+ renderPanel();
+}
+$$('.tool[data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
+
+$$('.topnav button').forEach(b=>b.onclick=()=>{
+ activeTab=b.dataset.tab;
+ $$('.topnav button').forEach(x=>x.classList.toggle('active',x===b));
+ if(activeTab==='design') activeTool='product';
+ renderPanel();
+});
+
+function renderPanel(){
+ let h='';
+ if(activeTab==='library'){
+   h=`<h2>Biblioteca</h2><p>Tus diseños subidos aparecen aquí. Tócalos para agregarlos.</p>
+   <div class="card"><div class="cardTitle">Tus archivos</div><div class="libraryGrid" id="libraryGrid">${libraryHTML()}</div></div>`;
+ } else if(activeTab==='templates'){
+   h=`<h2>Plantillas</h2><p>Textos rápidos para empezar y luego moverlos directamente sobre la prenda.</p>
+   <div class="card"><div class="cardTitle">Streetwear</div><div class="templateGrid">
+   ${['ONLY UNBROKEN','NEVER FOLD','KEEP GOING','RESILIENCE','NO LIMITS','STAY REAL'].map(t=>`<button class="template" data-template="${t}"><strong>${t}</strong></button>`).join('')}
+   </div></div>`;
+ } else if(activeTab==='settings'){
+   h=`<h2>Ajustes</h2><p>Configura la mesa de trabajo.</p>
+   <div class="card"><div class="cardTitle">Vista sincronizada</div>
+   <div class="row"><button class="btn" id="toggleGrid">${showGrid?'Quitar':'Mostrar'} cuadrícula</button><button class="btn" id="toggleBg">Fondo ${backgroundMode==='light'?'oscuro':'claro'}</button></div>
+   <button class="btn wide" style="margin-top:8px" id="clearAll">Eliminar todos los diseños</button></div>`;
+ } else if(activeTool==='product'){
+   h=`<h2>Sudadera oversize</h2><p>La misma sudadera se usa en Editor fácil y en Modelo 3D. No cambia la prenda ni se pierde tu diseño.</p>
+   <div class="card"><div class="cardTitle">Producto</div>
+   <div style="display:flex;gap:10px;align-items:center"><div style="width:62px;height:72px;background:#eef1f6;border-radius:12px;display:grid;place-items:center"><img src="hoodie_front.png" style="max-width:56px;max-height:68px"></div>
+   <div><b style="font-size:12px">Hoodie Oversize</b><div style="color:#8996bd;font-size:10px;margin-top:3px">${faceName(currentFace)} · misma sudadera en Editor fácil y Modelo 3D</div></div></div></div>`;
+ } else if(activeTool==='colors'){
+   const sw=['#e1e2e6','#111216','#8b8f98','#344d7b','#536558','#72555a','#d6c2a2','#5a3b67'];
+   h=`<h2>Colores</h2><p>El color se aplica a la misma sudadera en frente, espalda y lados, tanto en Editor fácil como en Modelo 3D.</p>
+   <div class="card"><div class="cardTitle">Color de la sudadera</div>
+   <input id="hoodColor" type="color" value="${hoodieColor}">
+   <div class="swatches" style="margin-top:10px">${sw.map(c=>`<button class="swatch ${c===hoodieColor?'active':''}" data-color="${c}" style="background:${c}"></button>`).join('')}</div></div>`;
+ } else if(activeTool==='text'){
+   h=`<h2>Textos</h2><p>Agrega texto y muévelo directamente sobre la sudadera.</p>
+   <div class="card"><label>Texto</label><input id="textValue" type="text" value="ONLY UNBROKEN" maxlength="60">
+   <div class="row"><div><label>Tipografía</label><select id="fontValue"><option>Impact</option><option>Arial Black</option><option>Georgia</option><option>Courier New</option></select></div>
+   <div style="max-width:64px"><label>Color</label><input id="textColor" type="color" value="#111111"></div></div>
+   <button class="btn primary wide" id="addText" style="margin-top:10px">Agregar texto</button></div>`;
+ } else if(activeTool==='images'){
+   h=`<h2>Imágenes</h2><p>Sube PNG, JPG o WEBP. Después arrástralo como en un editor de mockups.</p>
+   <div class="card"><div class="uploadBox">Selecciona tu diseño<br><br><input id="imgUpload" type="file" accept="image/png,image/jpeg,image/webp"></div></div>`;
+ } else if(activeTool==='pencil'){
+   h=`<h2>Apple Pencil</h2><p>Dibuja, luego inserta el dibujo sobre la sudadera.</p>
+   <div class="card"><canvas id="pencilCanvas" class="pencilPad" width="900" height="675"></canvas>
+   <div class="row"><div><label>Color</label><input id="pencilColor" type="color" value="#111111"></div><div><label>Grosor</label><input id="pencilSize" type="range" min="3" max="45" value="14"></div></div>
+   <div class="row" style="margin-top:9px"><button class="btn" id="pencilClear">Limpiar</button><button class="btn primary" id="pencilAdd">Agregar dibujo</button></div></div>`;
+ } else if(activeTool==='layers'){
+   h=`<h2>Capas</h2><p>Selecciona un elemento para editarlo.</p><div class="card">${layersHTML()}</div>
+   ${selected()?`<div class="card"><div class="cardTitle">Seleccionado</div><label>Tamaño</label><input id="layerSize" type="range" min="8" max="80" value="${selected().w}">
+   <label>Rotación</label><input id="layerRot" type="range" min="-180" max="180" value="${selected().rot}">
+   <button class="btn wide" id="centerSelected" style="margin-top:8px">Centrar</button><button class="btn wide" id="deleteSelected" style="margin-top:7px;color:#ff9aa5">Eliminar</button></div>`:''}`;
+ }
+ panel.innerHTML=h; bindPanel();
+}
+function libraryHTML(){
+ if(!library.length)return `<div style="grid-column:1/-1;color:#8190ba;font-size:10px;padding:16px;text-align:center">Todavía no has subido imágenes.</div>`;
+ return library.map((x,i)=>`<button class="libraryItem" data-lib="${i}"><img src="${x.data}"><span>${x.name}</span></button>`).join('');
+}
+function visibleLayers(){return layers.filter(l=>(l.face||'front')===currentFace)}
+function layersHTML(){
+ const visible=visibleLayers();
+ if(!visible.length)return `<div style="color:#8190ba;font-size:10px;text-align:center;padding:14px">No hay diseños en ${faceName(currentFace).toLowerCase()}.</div>`;
+ return visible.slice().reverse().map(l=>`<div class="layerItem" data-layer="${l.id}"><div class="layerThumb"><img src="${l.data}"></div><div class="layerText"><b>${l.name}</b><span>${l.type} · ${faceName(l.face||'front')}</span></div></div>`).join('');
+}
+function bindPanel(){
+ if(activeTab==='library') panel.querySelectorAll('[data-lib]').forEach(b=>b.onclick=()=>addLayer(library[+b.dataset.lib].data,library[+b.dataset.lib].name,'imagen'));
+ if(activeTab==='templates') panel.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>addTextLayer(b.dataset.template,'Impact','#111111'));
+ if(activeTab==='settings'){
+   $('#toggleGrid').onclick=()=>{showGrid=!showGrid;$('#gridbg').style.display=showGrid?'block':'none';renderPanel()};
+   $('#toggleBg').onclick=()=>{backgroundMode=backgroundMode==='light'?'dark':'light';$('#artboard').style.background=backgroundMode==='light'?'radial-gradient(circle at 50% 42%,#fff 0,#f4f5f9 58%,#e9ebf2 100%)':'radial-gradient(circle at 50% 42%,#29314b 0,#141b31 68%,#0f1426 100%)';renderPanel()};
+   $('#clearAll').onclick=()=>{layers=[];selectedId=null;renderLayers();saveState();renderPanel();notify('Diseños eliminados')};
+ }
+ if(activeTool==='colors'&&activeTab==='design'){
+   $('#hoodColor').oninput=e=>{hoodieColor=e.target.value;renderGarment();renderAll3D();saveState()};
+   panel.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{hoodieColor=b.dataset.color;renderGarment();renderAll3D();saveState();renderPanel()});
+ }
+ if(activeTool==='text'&&activeTab==='design') $('#addText').onclick=()=>addTextLayer($('#textValue').value,$('#fontValue').value,$('#textColor').value);
+ if(activeTool==='images'&&activeTab==='design') $('#imgUpload').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{library.push({name:f.name,data:r.result});addLayer(r.result,f.name,'imagen');saveState()};r.readAsDataURL(f)};
+ if(activeTool==='pencil'&&activeTab==='design') setupPencil();
+ if(activeTool==='layers'&&activeTab==='design'){
+   panel.querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{selectedId=+b.dataset.layer;renderLayers();renderPanel()});
+   if(selected()){
+     $('#layerSize').oninput=e=>{selected().w=+e.target.value;syncLayer(selected());saveState()};
+     $('#layerRot').oninput=e=>{selected().rot=+e.target.value;syncLayer(selected());saveState()};
+     $('#centerSelected').onclick=()=>{selected().x=50;selected().y=47;syncLayer(selected());saveState()};
+     $('#deleteSelected').onclick=()=>removeLayer(selected().id);
+   }
+ }
+}
+function textImage(text,font,color){
+ const c=document.createElement('canvas');c.width=1200;c.height=360;const x=c.getContext('2d');
+ x.clearRect(0,0,c.width,c.height);x.fillStyle=color;x.textAlign='center';x.textBaseline='middle';
+ let size=150;x.font=`900 ${size}px "${font}"`;while(x.measureText(text).width>1080&&size>45){size-=5;x.font=`900 ${size}px "${font}"`}
+ x.fillText(text||'ONLY UNBROKEN',600,180);
+ return c.toDataURL('image/png');
+}
+function addTextLayer(text,font,color){addLayer(textImage(text,font,color),text||'Texto','texto')}
+function addLayer(data,name,type){
+ const im=new Image();im.onload=()=>{const aspect=im.width/im.height;layers.push({id:seq++,data,name,type,aspect,x:50,y:47,w:Math.min(36,Math.max(18,22*aspect)),rot:0,face:currentFace});selectedId=layers[layers.length-1].id;renderLayers();saveState();notify('Diseño agregado en '+faceName(currentFace).toLowerCase()+'. Arrástralo con el dedo o Apple Pencil.');setTool('layers')};im.src=data;
+}
+function selected(){return layers.find(l=>l.id===selectedId)||null}
+function renderLayers(){
+ designArea.innerHTML='';
+ visibleLayers().forEach(l=>{
+   const el=document.createElement('div');el.className='designLayer'+(l.id===selectedId?' selected':'');el.dataset.id=l.id;
+   el.style.left=l.x+'%';el.style.top=l.y+'%';el.style.width=l.w+'%';el.style.transform=`translate(-50%,-50%) rotate(${l.rot}deg)`;
+   el.innerHTML=`<img src="${l.data}"><span class="handle rotate"></span><span class="handle resize"></span><span class="handle delete">×</span><span class="dragLabel">Mover</span>`;
+   designArea.appendChild(el);bindLayer(el,l);
+ });
+ renderAll3D();
+}
+function syncLayer(l){
+ const el=designArea.querySelector(`[data-id="${l.id}"]`);if(el){el.style.left=l.x+'%';el.style.top=l.y+'%';el.style.width=l.w+'%';el.style.transform=`translate(-50%,-50%) rotate(${l.rot}deg)`;}
+ renderAll3D();
+}
+function bindLayer(el,l){
+ const resize=el.querySelector('.resize'),rotate=el.querySelector('.rotate'),del=el.querySelector('.delete');
+ el.onpointerdown=e=>{
+   if(e.target===resize||e.target===rotate||e.target===del)return;
+   e.preventDefault();selectedId=l.id;renderLayers();if(activeTool==='layers')renderPanel();
+   const area=designArea.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,ox=l.x,oy=l.y;
+   const move=ev=>{l.x=Math.max(4,Math.min(96,ox+(ev.clientX-sx)/area.width*100));l.y=Math.max(5,Math.min(95,oy+(ev.clientY-sy)/area.height*100));syncLayer(l)};
+   const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);saveState()};
+   window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+ };
+ resize.onpointerdown=e=>{
+   e.preventDefault();e.stopPropagation();const area=designArea.getBoundingClientRect(),sx=e.clientX,ow=l.w;
+   const move=ev=>{l.w=Math.max(6,Math.min(80,ow+(ev.clientX-sx)/area.width*100));syncLayer(l)};
+   const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);saveState();if(activeTool==='layers')renderPanel()};
+   window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+ };
+ rotate.onpointerdown=e=>{
+   e.preventDefault();e.stopPropagation();const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+   const move=ev=>{l.rot=Math.round(Math.atan2(ev.clientY-cy,ev.clientX-cx)*180/Math.PI)+90;syncLayer(l)};
+   const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);saveState();if(activeTool==='layers')renderPanel()};
+   window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+ };
+ del.onpointerdown=e=>{e.preventDefault();e.stopPropagation();removeLayer(l.id)};
+}
+function removeLayer(id){layers=layers.filter(x=>x.id!==id);if(selectedId===id)selectedId=null;renderLayers();saveState();renderPanel()}
+function setupPencil(){
+ const c=$('#pencilCanvas'),x=c.getContext('2d');x.lineCap='round';x.lineJoin='round';let drawing=false,last=null;
+ const pos=e=>{const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}};
+ c.onpointerdown=e=>{drawing=true;last=pos(e);c.setPointerCapture?.(e.pointerId);e.preventDefault()};
+ c.onpointermove=e=>{if(!drawing)return;const p=pos(e),pressure=e.pointerType==='pen'&&e.pressure?e.pressure:.55;x.strokeStyle=$('#pencilColor').value;x.lineWidth=+$('#pencilSize').value*(.6+pressure*.8);x.beginPath();x.moveTo(last.x,last.y);x.lineTo(p.x,p.y);x.stroke();last=p;e.preventDefault()};
+ c.onpointerup=()=>drawing=false;c.onpointercancel=()=>drawing=false;
+ $('#pencilClear').onclick=()=>x.clearRect(0,0,c.width,c.height);
+ $('#pencilAdd').onclick=()=>{const data=trimCanvas(c);if(data)addLayer(data,'Dibujo Apple Pencil','dibujo')};
+}
+function trimCanvas(c){
+ const x=c.getContext('2d'),im=x.getImageData(0,0,c.width,c.height),d=im.data;let minX=c.width,minY=c.height,maxX=-1,maxY=-1;
+ for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++){if(d[(y*c.width+xx)*4+3]>5){minX=Math.min(minX,xx);maxX=Math.max(maxX,xx);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}}
+ if(maxX<0){notify('Dibuja algo primero');return null}
+ const p=18,w=maxX-minX+1+p*2,h=maxY-minY+1+p*2,o=document.createElement('canvas');o.width=w;o.height=h;o.getContext('2d').drawImage(c,minX-p,minY-p,w,h,0,0,w,h);return o.toDataURL('image/png')
+}
+function setView(mode){
+ viewMode=mode;
+ $('#editViewBtn').classList.toggle('active',mode==='edit');
+ $('#view3dBtn').classList.toggle('active',mode==='3d');
+ if(mode==='3d'){
+   $('#artboard').style.display='none';
+   local3d.style.display='block';
+   renderAll3D();
+   snap3DToFace(currentFace,true);
+   notify('Modelo 3D local cargado · arrastra para girar');
+ } else {
+   local3d.style.display='none';
+   $('#artboard').style.display='block';
+   renderGarment();
+   renderLayers();
+   notify('Editor fácil listo · vista '+faceName(currentFace).toLowerCase());
+ }
+}
+$('#editViewBtn').onclick=()=>setView('edit');$('#view3dBtn').onclick=()=>setView('3d');
+$$('[data-face]').forEach(btn=>btn.onclick=()=>setFace(btn.dataset.face));
+function setFace(face){
+ currentFace=face;
+ $$('.faceSwitcher [data-face]').forEach(b=>b.classList.toggle('active',b.dataset.face===face));
+ if(selected() && (selected().face||'front')!==face) selectedId=null;
+ if(viewMode==='3d'){
+   renderAll3D();
+   snap3DToFace(face,true);
+ } else {
+   renderGarment();
+   renderLayers();
+ }
+ renderPanel();
+ saveState();
+ notify((viewMode==='3d'?'Modelo 3D':'Editor fácil')+' · vista '+faceName(face).toLowerCase());
+}
+$('#resetBtn').onclick=()=>{layers=[];selectedId=null;renderLayers();saveState();notify('Editor restablecido')};
+$('#centerBtn').onclick=()=>{if(selected()){selected().x=50;selected().y=47;syncLayer(selected());saveState()}else notify('Selecciona un diseño primero')};
+$('#undoBtn').onclick=()=>{const visible=visibleLayers(); if(visible.length){removeLayer(visible[visible.length-1].id); notify('Se deshizo el último diseño de '+faceName(currentFace).toLowerCase())}};
+$('#saveBtn').onclick=()=>{saveState();notify('Proyecto guardado en este iPad')};
+$('#exportBtn').onclick=exportPNG;
+
+function exportPNG(){
+ const c=document.createElement('canvas');c.width=1200;c.height=1200;const x=c.getContext('2d');
+ x.fillStyle=backgroundMode==='light'?'#f2f4f8':'#151b31';x.fillRect(0,0,c.width,c.height);
+ const g=document.createElement('canvas');g.width=530;g.height=690;g.getContext('2d').drawImage(garmentCanvas,0,0);
+ const gw=680,gh=680*690/530,gx=(1200-gw)/2,gy=(1200-gh)/2;
+ x.drawImage(g,gx,gy,gw,gh);
+ const jobs=visibleLayers().map(l=>new Promise(res=>{const im=new Image();im.onload=()=>{const w=l.w/100*gw,h=w/l.aspect,px=gx+l.x/100*gw,py=gy+l.y/100*gh;x.save();x.translate(px,py);x.rotate(l.rot*Math.PI/180);x.drawImage(im,-w/2,-h/2,w,h);x.restore();res()};im.src=l.data}));
+ Promise.all(jobs).then(()=>{const a=document.createElement('a');a.download='only-unbroken-mockup.png';a.href=c.toDataURL('image/png');a.click();notify('PNG exportado')})
+}
+function saveState(){try{localStorage.setItem(stateKey,JSON.stringify({hoodieColor,currentFace,yaw3d,layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face})=>({id,data,name,type,aspect,x,y,w,rot,face})),library,showGrid,backgroundMode,seq}))}catch(e){}}
+function loadState(){try{const d=JSON.parse(localStorage.getItem(stateKey)||'null');if(!d)return;hoodieColor=d.hoodieColor||hoodieColor;layers=(d.layers||[]).map(l=>({...l,face:l.face||'front'}));library=d.library||[];showGrid=!!d.showGrid;backgroundMode=d.backgroundMode||'light';currentFace=d.currentFace||'front';yaw3d=typeof d.yaw3d==='number'?d.yaw3d:(faceAngles[currentFace]??0);seq=d.seq||100;$('#gridbg').style.display=showGrid?'block':'none';$$('[data-face]').forEach(b=>b.classList.toggle('active',b.dataset.face===currentFace))}catch(e){}}
+loadState();renderGarment();renderLayers();renderAll3D();snap3DToFace(currentFace,false);renderPanel();
+</script>
+</body>
+</html>
