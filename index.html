@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090d1d">
-<title>ONLY UNBROKEN · Local 3D Studio V10</title>
+<title>ONLY UNBROKEN · Turntable 3D V11</title>
 <style>
 :root{
   --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
@@ -162,27 +162,26 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
   width:min(58vw,530px);
   aspect-ratio:530/690;
   transform-style:preserve-3d;
-  transform:rotateX(-2deg) rotateY(0deg);
-  transition:transform .32s cubic-bezier(.2,.7,.2,1);
+  transform:rotateX(-1.5deg);
+  transition:filter .22s ease;
   filter:drop-shadow(0 28px 26px rgba(20,28,48,.18));
   touch-action:none;
 }
-.hoodieCube.dragging{transition:none}
+.hoodieCube.dragging{filter:drop-shadow(0 32px 30px rgba(20,28,48,.22))}
 .face3d{
   position:absolute;
   inset:0;
   width:100%;
   height:100%;
   object-fit:contain;
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-  transform-style:preserve-3d;
   pointer-events:none;
+  opacity:0;
+  transform-origin:50% 52%;
+  transition:opacity .28s ease, transform .28s ease, filter .28s ease;
+  will-change:opacity,transform;
 }
-.front3d{transform:rotateY(0deg) translateZ(115px)}
-.right3d{transform:rotateY(90deg) translateZ(115px)}
-.back3d{transform:rotateY(180deg) translateZ(115px)}
-.left3d{transform:rotateY(-90deg) translateZ(115px)}
+.hoodieCube.dragging .face3d{transition:none}
+.front3d,.right3d,.back3d,.left3d{transform:none}
 .local3dHelp{
   position:absolute;
   left:14px;
@@ -208,7 +207,7 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
 <body>
 <div class="app">
 <header>
-  <div class="brand"><div class="logo">OU</div><div><b>ONLY UNBROKEN</b><small>CUSTOMWEAR · LOCAL 3D STUDIO V10</small></div></div>
+  <div class="brand"><div class="logo">OU</div><div><b>ONLY UNBROKEN</b><small>CUSTOMWEAR · TURNTABLE 3D V11</small></div></div>
   <nav class="topnav">
     <button class="active" data-tab="design">Diseño</button>
     <button data-tab="library">Biblioteca</button>
@@ -260,7 +259,7 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
           <canvas class="face3d right3d" id="face3d-right" width="530" height="690"></canvas>
         </div>
       </div>
-      <div class="local3dHelp">Arrastra sobre la sudadera para girarla. Frente, espalda y lados usan los mismos archivos del Editor fácil.</div>
+      <div class="local3dHelp">Arrastra para girar. La prenda cambia suavemente entre frente, lados y espalda sin desaparecer.</div>
     </div>
     <div class="stageHint" id="stageHint"><span class="statusDot"></span>Arrastra el diseño con el dedo o Apple Pencil. Usa las bolitas para girar y agrandar.</div>
   </main>
@@ -279,10 +278,11 @@ let hoodieColor='#e1e2e6';
 let activeTool='product', activeTab='design', layers=[], selectedId=null, seq=1, library=[];
 let viewMode='edit', showGrid=false, backgroundMode='light', currentFace='front';
 let yaw3d=0, dragging3d=false, dragStartX=0, dragStartYaw=0;
-const faceAngles={front:0,right:-90,back:180,left:90};
+const faceAngles={front:0,right:-90,back:-180,left:-270};
+const faceOrder=['front','right','back','left'];
 const faceCanvas3D={front:$('#face3d-front'),back:$('#face3d-back'),left:$('#face3d-left'),right:$('#face3d-right')};
 const layerImgCache=new Map();
-const stateKey='only_unbroken_local3d_v10';
+const stateKey='only_unbroken_turntable_v11';
 
 function hexToRgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
 function faceName(face){return ({front:'Frente',back:'Espalda',left:'Lado izquierdo',right:'Lado derecho'})[face]||'Frente'}
@@ -351,10 +351,52 @@ function renderAll3D(){
  Object.keys(faceCanvas3D).forEach(face=>tintGarmentToCanvas(face,faceCanvas3D[face]));
 }
 
+function normalizedTurn(v){
+ // 0 = front, 90 = right, 180 = back, 270 = left
+ return ((-v)%360+360)%360;
+}
+
+function easeTurn(t){
+ return t*t*(3-2*t);
+}
+
 function apply3DRotation(animate=true){
  if(!hoodieCube)return;
  hoodieCube.classList.toggle('dragging',!animate);
- hoodieCube.style.transform=`rotateX(-2deg) rotateY(${yaw3d}deg)`;
+ const turn=normalizedTurn(yaw3d);
+ const segment=turn/90;
+ const idx=Math.floor(segment)%4;
+ const rawT=segment-Math.floor(segment);
+ const t=easeTurn(rawT);
+ const a=faceOrder[idx];
+ const b=faceOrder[(idx+1)%4];
+
+ // Keep a garment visible during the entire rotation. This replaces the old
+ // cube edge-on behavior that made the hoodie disappear mid-drag.
+ for(const face of faceOrder){
+   const c=faceCanvas3D[face];
+   if(!c)continue;
+   if(face===a){
+     const sx=1-(.18*t);
+     const tx=-7*t;
+     c.style.opacity=String(1-t);
+     c.style.transform=`translateX(${tx}%) scaleX(${sx}) scaleY(${1-.015*t})`;
+     c.style.filter=`brightness(${1-.04*t})`;
+     c.style.zIndex='2';
+   }else if(face===b){
+     const sx=.82+(.18*t);
+     const tx=7*(1-t);
+     c.style.opacity=String(t);
+     c.style.transform=`translateX(${tx}%) scaleX(${sx}) scaleY(${.985+.015*t})`;
+     c.style.filter=`brightness(${.96+.04*t})`;
+     c.style.zIndex='3';
+   }else{
+     c.style.opacity='0';
+     c.style.transform='scaleX(.88)';
+     c.style.zIndex='1';
+   }
+ }
+ hoodieCube.style.transform='rotateX(-1.5deg)';
 }
 
 function snap3DToFace(face,animate=true){
@@ -368,16 +410,9 @@ function normalizeYaw(v){
 }
 
 function nearestFaceFromYaw(v){
- const n=normalizeYaw(v);
- const candidates=[
-   ['front',0],['right',-90],['left',90],['back',180],['back',-180]
- ];
- let best='front',dist=999;
- for(const [f,a] of candidates){
-   const d=Math.abs(n-a);
-   if(d<dist){dist=d;best=f}
- }
- return best;
+ const turn=normalizedTurn(v);
+ const idx=Math.round(turn/90)%4;
+ return faceOrder[idx];
 }
 
 local3dScene.addEventListener('pointerdown',e=>{
@@ -392,7 +427,7 @@ local3dScene.addEventListener('pointerdown',e=>{
 local3dScene.addEventListener('pointermove',e=>{
  if(!dragging3d || viewMode!=='3d')return;
  const rect=local3dScene.getBoundingClientRect();
- yaw3d=dragStartYaw+(e.clientX-dragStartX)/Math.max(260,rect.width)*150;
+ yaw3d=dragStartYaw-(e.clientX-dragStartX)/Math.max(280,rect.width)*125;
  apply3DRotation(false);
  e.preventDefault();
 });
@@ -585,7 +620,7 @@ function setView(mode){
    local3d.style.display='block';
    renderAll3D();
    snap3DToFace(currentFace,true);
-   notify('Modelo 3D local cargado · arrastra para girar');
+   notify('Modelo 3D listo · misma sudadera · arrastra para girar');
  } else {
    local3d.style.display='none';
    $('#artboard').style.display='block';
@@ -628,7 +663,7 @@ function exportPNG(){
 }
 function saveState(){try{localStorage.setItem(stateKey,JSON.stringify({hoodieColor,currentFace,yaw3d,layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face})=>({id,data,name,type,aspect,x,y,w,rot,face})),library,showGrid,backgroundMode,seq}))}catch(e){}}
 function loadState(){try{const d=JSON.parse(localStorage.getItem(stateKey)||'null');if(!d)return;hoodieColor=d.hoodieColor||hoodieColor;layers=(d.layers||[]).map(l=>({...l,face:l.face||'front'}));library=d.library||[];showGrid=!!d.showGrid;backgroundMode=d.backgroundMode||'light';currentFace=d.currentFace||'front';yaw3d=typeof d.yaw3d==='number'?d.yaw3d:(faceAngles[currentFace]??0);seq=d.seq||100;$('#gridbg').style.display=showGrid?'block':'none';$$('[data-face]').forEach(b=>b.classList.toggle('active',b.dataset.face===currentFace))}catch(e){}}
-loadState();renderGarment();renderLayers();renderAll3D();snap3DToFace(currentFace,false);renderPanel();
+loadState();renderGarment();renderLayers();renderAll3D();snap3DToFace(currentFace,false);apply3DRotation(false);renderPanel();
 </script>
 </body>
 </html>

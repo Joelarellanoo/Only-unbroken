@@ -1,6 +1,7 @@
-ONLY UNBROKEN LOCAL 3D V10
+ONLY UNBROKEN TURNTABLE 3D V11
 
-Este ZIP conserva el Editor fácil y reemplaza únicamente el Modelo 3D.
-El visor 3D es local: no usa Sketchfab ni necesita cargar un modelo externo.
-Usa exactamente las mismas vistas front/back/left/right que el Editor fácil,
-sincroniza color y diseños, y se puede girar arrastrando con el dedo.
+- Editor fácil sin cambios.
+- Se arregló el problema del Modelo 3D que desaparecía al girarlo de lado.
+- El giro ahora mezcla suavemente frente, derecha, espalda e izquierda.
+- Usa exactamente las mismas imágenes de sudadera del Editor fácil.
+- Colores y diseños siguen sincronizados por cada vista.
