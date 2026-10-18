@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090d1d">
-<title>ONLY UNBROKEN · Editor HQ V13</title>
+<title>ONLY UNBROKEN · Studio V14</title>
 <style>
 :root{
   --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
@@ -214,14 +214,74 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
 #zoomResetBtn{min-width:58px}
 #doneEditBtn{display:none;background:linear-gradient(135deg,#7457ff,#df49c7);border:0;color:#fff;font-weight:800}
 
+
+.dashboard{
+  min-height:0;overflow:auto;padding:22px;
+  background:
+    radial-gradient(circle at 12% 5%,#24398055 0,transparent 30%),
+    radial-gradient(circle at 88% 8%,#6b236055 0,transparent 24%),
+    linear-gradient(180deg,#080d20,#060913);
+}
+.dashIntro{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;max-width:1380px;margin:0 auto 18px}
+.dashIntro h1{margin:4px 0 4px;font-size:clamp(28px,4vw,52px);letter-spacing:-.045em}
+.dashIntro p{margin:0;color:#9da9cb;font-size:12px}
+.eyebrow{font-size:9px;letter-spacing:.18em;color:#8190ba;font-weight:800}
+.dashPill{border:1px solid #334477;background:#111a3c;border-radius:999px;padding:10px 13px;color:#cfd7ef;font-size:10px;white-space:nowrap}
+.dashColumns{max-width:1380px;margin:auto;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(340px,.92fr);gap:16px}
+.dashSection{min-width:0;background:linear-gradient(180deg,#0f1735,#0a1026);border:1px solid #27335f;border-radius:26px;padding:18px;box-shadow:0 22px 55px #0004}
+.dashSectionHead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px}
+.dashSectionHead h2{margin:2px 0 0;font-size:22px}
+.smallMuted{font-size:9px;color:#7f8db5;text-align:right}
+.productGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.productCard{min-width:0;overflow:hidden;border:1px solid #2b396c;background:#0d1531;border-radius:21px}
+.productPreview{
+  height:290px;display:grid;place-items:center;overflow:hidden;
+  background:radial-gradient(circle at 50% 38%,#fff,#e9edf5 68%,#d9dfeb);
+  border-bottom:1px solid #2b396c
+}
+.productPreview img{max-width:92%;max-height:92%;object-fit:contain;filter:drop-shadow(0 18px 15px #25304428)}
+.productInfo{padding:14px}
+.productTag{font-size:8px;letter-spacing:.16em;color:#8f9bc2;font-weight:800}
+.productInfo h3{margin:4px 0 5px;font-size:17px}
+.productInfo p{margin:0 0 12px;color:#8f9bc2;font-size:10px;line-height:1.5;min-height:30px}
+.dashPrimary{width:100%;border:0;border-radius:13px;padding:11px;color:white;font-weight:800;font-size:10px;background:linear-gradient(135deg,#7457ff,#df49c7)}
+.projectsGrid{display:flex;flex-direction:column;gap:9px}
+.projectEmpty{border:1px dashed #354476;border-radius:18px;padding:30px 16px;text-align:center;color:#8491ba;font-size:10px;line-height:1.6}
+.projectCard{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:11px;align-items:center;padding:9px;border:1px solid #293665;border-radius:17px;background:#101837}
+.projectThumb{height:72px;border-radius:13px;background:radial-gradient(circle,#fff,#e4e8f1);display:grid;place-items:center;overflow:hidden}
+.projectThumb img{max-width:66px;max-height:68px;object-fit:contain}
+.projectMeta{min-width:0}
+.projectMeta b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.projectMeta span{display:block;color:#8491ba;font-size:9px;margin-top:3px}
+.projectActions{display:flex;flex-direction:column;gap:5px}
+.projectActions button{border:1px solid #344577;background:#151f45;color:#eef2ff;border-radius:10px;padding:7px 9px;font-size:9px}
+.projectActions .openProject{background:#26336c;border-color:#4658a4}
+.projectActions .deleteProject{color:#ff9aa5}
+#workspace{display:none}
+body.menuOpen .headActions{visibility:hidden}
+@media(max-width:980px){
+  .dashColumns{grid-template-columns:1fr}
+  .projectsSection{min-height:240px}
+}
+@media(max-width:680px){
+  .dashboard{padding:12px}
+  .dashIntro{align-items:flex-start;flex-direction:column}
+  .dashPill{display:none}
+  .productGrid{grid-template-columns:1fr}
+  .productPreview{height:240px}
+  .projectCard{grid-template-columns:64px minmax(0,1fr)}
+  .projectActions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}
+}
+
 </style>
 </head>
 <body>
 <div class="app">
 <header>
-  <div class="brand"><div class="logo">OU</div><div><b>ONLY UNBROKEN</b><small>CUSTOMWEAR · EDITOR HQ V13</small></div></div>
+  <div class="brand"><div class="logo">OU</div><div><b>ONLY UNBROKEN</b><small>CUSTOMWEAR · STUDIO V14</small></div></div>
   <nav class="topnav">
-    <button class="active" data-tab="design">Diseño</button>
+    <button class="active" data-tab="home">Inicio</button>
+    <button data-tab="design">Diseño</button>
     <button data-tab="library">Biblioteca</button>
     <button data-tab="templates">Plantillas</button>
     <button data-tab="settings">Ajustes</button>
@@ -229,7 +289,57 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
   <div class="headActions"><button id="saveBtn">Guardar</button><button class="primary" id="exportBtn">Exportar</button></div>
 </header>
 
-<div class="workspace">
+<section class="dashboard" id="dashboard">
+  <div class="dashIntro">
+    <div>
+      <span class="eyebrow">ONLY UNBROKEN STUDIO</span>
+      <h1>¿Qué quieres diseñar?</h1>
+      <p>Elige un mockup para empezar o abre uno de tus proyectos guardados.</p>
+    </div>
+    <div class="dashPill">2 prendas disponibles</div>
+  </div>
+
+  <div class="dashColumns">
+    <section class="dashSection mockupsSection">
+      <div class="dashSectionHead">
+        <div><span class="eyebrow">MOCKUPS</span><h2>Prendas</h2></div>
+        <span class="smallMuted">Elige una para crear un proyecto nuevo</span>
+      </div>
+
+      <div class="productGrid">
+        <article class="productCard">
+          <div class="productPreview"><img src="hoodie_front.png" alt="Hoodie oversize"></div>
+          <div class="productInfo">
+            <span class="productTag">HOODIE</span>
+            <h3>Hoodie Oversize</h3>
+            <p>La sudadera original que ya estabas usando.</p>
+            <button class="dashPrimary" data-create-product="hoodie">Crear diseño</button>
+          </div>
+        </article>
+
+        <article class="productCard">
+          <div class="productPreview"><img src="tee_front.png" alt="Playera regular"></div>
+          <div class="productInfo">
+            <span class="productTag">PLAYERA</span>
+            <h3>Playera Regular</h3>
+            <p>Caída media, largo normal y manga estándar. No oversize ni crop.</p>
+            <button class="dashPrimary" data-create-product="tee">Crear diseño</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="dashSection projectsSection">
+      <div class="dashSectionHead">
+        <div><span class="eyebrow">MIS PROYECTOS</span><h2>En proceso</h2></div>
+        <span class="smallMuted">Se guardan en este dispositivo</span>
+      </div>
+      <div class="projectsGrid" id="projectsGrid"></div>
+    </section>
+  </div>
+</section>
+
+<div class="workspace" id="workspace">
   <aside class="rail">
     <button class="tool active" data-tool="product"><span>Producto</span></button>
     <button class="tool" data-tool="colors"><span>Colores</span></button>
@@ -278,7 +388,7 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
           <canvas class="face3d right3d" id="face3d-right" width="1060" height="1380"></canvas>
         </div>
       </div>
-      <div class="local3dHelp">Arrastra para girar. La prenda cambia suavemente entre frente, lados y espalda sin desaparecer.</div>
+      <div class="local3dHelp">Arrastra para girar. El mockup cambia suavemente entre frente, lados y espalda.</div>
     </div>
     <div class="stageHint" id="stageHint"><span class="statusDot"></span>Arrastra el diseño. Pellizca o usa +/− para zoom. Vista 3D en alta calidad para evitar pixelado.</div>
   </main>
@@ -291,9 +401,42 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const panel=$('#panel'), designArea=$('#designArea'), artboard=$('#artboard'), garmentWrap=$('#garmentWrap'), garmentCanvas=$('#garmentCanvas'), garmentCtx=garmentCanvas.getContext('2d');
 const local3d=$('#local3d'), local3dScene=$('#local3dScene'), hoodieCube=$('#hoodieCube');
-const hoodieSources={front:'hoodie_front.png',back:'hoodie_back.png',left:'hoodie_left.png',right:'hoodie_right.png'};
-const hoodieImages=Object.fromEntries(Object.entries(hoodieSources).map(([k,v])=>{const im=new Image();im.src=v;return [k,im]}));
-let hoodieColor='#e1e2e6';
+const dashboard=$('#dashboard'), workspace=$('#workspace'), projectsGrid=$('#projectsGrid');
+
+const products={
+  hoodie:{
+    id:'hoodie',
+    name:'Hoodie Oversize',
+    shortName:'Hoodie',
+    fit:'Oversize',
+    description:'La sudadera original de ONLY UNBROKEN.',
+    defaultColor:'#e1e2e6',
+    sources:{front:'hoodie_front.png',back:'hoodie_back.png',left:'hoodie_left.png',right:'hoodie_right.png'}
+  },
+  tee:{
+    id:'tee',
+    name:'Playera Regular',
+    shortName:'Playera',
+    fit:'Regular / relajada',
+    description:'Caída media, largo normal y manga estándar. No oversize ni crop.',
+    defaultColor:'#e7e7e7',
+    sources:{front:'tee_front.png',back:'tee_back.png',left:'tee_left.png',right:'tee_right.png'}
+  }
+};
+
+const productImages={};
+Object.values(products).forEach(product=>{
+  productImages[product.id]={};
+  Object.entries(product.sources).forEach(([face,src])=>{
+    const im=new Image();
+    im.decoding='async';
+    im.src=src;
+    productImages[product.id][face]=im;
+  });
+});
+
+let currentProduct='hoodie';
+let garmentColor=products.hoodie.defaultColor;
 let activeTool='product', activeTab='design', layers=[], selectedId=null, seq=1, library=[];
 let viewMode='edit', showGrid=false, backgroundMode='light', currentFace='front', editorZoom=1;
 let yaw3d=0, dragging3d=false, dragStartX=0, dragStartYaw=0;
@@ -305,15 +448,20 @@ const faceCanvas3D={front:$('#face3d-front'),back:$('#face3d-back'),left:$('#fac
 const layerImgCache=new Map();
 const faceBaseCache=new Map();
 const RENDER_W=1060, RENDER_H=1380;
-const stateKey='only_unbroken_turntable_v11';
+
+const projectsKey='only_unbroken_projects_v14';
+const legacyStateKey='only_unbroken_turntable_v11';
+let projects=[];
+let currentProjectId=null;
 
 function hexToRgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
 function faceName(face){return ({front:'Frente',back:'Espalda',left:'Lado izquierdo',right:'Lado derecho'})[face]||'Frente'}
-function currentGarment(){return hoodieImages[currentFace]||hoodieImages.front}
+function currentGarment(){const set=productImages[currentProduct];return set[currentFace]||set.front}
 function getTintedFace(face){
- const cached=faceBaseCache.get(face);
- if(cached && cached.color===hoodieColor)return cached.canvas;
- const img=hoodieImages[face];
+ const cacheKey=currentProduct+':'+face;
+ const cached=faceBaseCache.get(cacheKey);
+ if(cached && cached.color===garmentColor)return cached.canvas;
+ const img=productImages[currentProduct][face];
  if(!img || !img.complete || !img.naturalWidth)return null;
 
  const c=document.createElement('canvas');
@@ -325,7 +473,7 @@ function getTintedFace(face){
  ctx.drawImage(img,0,0,RENDER_W,RENDER_H);
 
  const imageData=ctx.getImageData(0,0,RENDER_W,RENDER_H);
- const d=imageData.data,[r,g,b]=hexToRgb(hoodieColor);
+ const d=imageData.data,[r,g,b]=hexToRgb(garmentColor);
  for(let i=0;i<d.length;i+=4){
    if(d[i+3]===0)continue;
    const lum=(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)/255;
@@ -336,7 +484,7 @@ function getTintedFace(face){
    d[i+2]=Math.max(0,Math.min(255,b*shade+detail));
  }
  ctx.putImageData(imageData,0,0);
- faceBaseCache.set(face,{color:hoodieColor,canvas:c});
+ faceBaseCache.set(cacheKey,{color:garmentColor,canvas:c});
  return c;
 }
 
@@ -349,10 +497,16 @@ function renderGarment(){
  garmentCtx.drawImage(base,0,0,garmentCanvas.width,garmentCanvas.height);
 }
 
-Object.entries(hoodieImages).forEach(([face,im])=>im.onload=()=>{
- faceBaseCache.delete(face);
- if(face===currentFace)renderGarment();
- renderAll3D(face);
+Object.entries(productImages).forEach(([productId,set])=>{
+ Object.entries(set).forEach(([face,im])=>{
+   im.onload=()=>{
+     faceBaseCache.delete(productId+':'+face);
+     if(productId===currentProduct){
+       if(face===currentFace)renderGarment();
+       renderAll3D(face);
+     }
+   };
+ });
 });
 
 function tintGarmentToCanvas(face,targetCanvas){
@@ -505,7 +659,11 @@ function setTool(tool){
 $$('.tool[data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
 
 $$('.topnav button').forEach(b=>b.onclick=()=>{
- activeTab=b.dataset.tab;
+ const tab=b.dataset.tab;
+ if(tab==='home'){showDashboard();return}
+ if(!currentProjectId){showDashboard();return}
+ showEditorShell();
+ activeTab=tab;
  $$('.topnav button').forEach(x=>x.classList.toggle('active',x===b));
  if(activeTab==='design') activeTool='product';
  renderPanel();
@@ -527,27 +685,29 @@ function renderPanel(){
    <div class="row"><button class="btn" id="toggleGrid">${showGrid?'Quitar':'Mostrar'} cuadrícula</button><button class="btn" id="toggleBg">Fondo ${backgroundMode==='light'?'oscuro':'claro'}</button></div>
    <button class="btn wide" style="margin-top:8px" id="clearAll">Eliminar todos los diseños</button></div>`;
  } else if(activeTool==='product'){
-   h=`<h2>Sudadera oversize</h2><p>La misma sudadera se usa en Editor fácil y en Modelo 3D. No cambia la prenda ni se pierde tu diseño.</p>
-   <div class="card"><div class="cardTitle">Producto</div>
-   <div style="display:flex;gap:10px;align-items:center"><div style="width:62px;height:72px;background:#eef1f6;border-radius:12px;display:grid;place-items:center"><img src="hoodie_front.png" style="max-width:56px;max-height:68px"></div>
-   <div><b style="font-size:12px">Hoodie Oversize</b><div style="color:#8996bd;font-size:10px;margin-top:3px">${faceName(currentFace)} · misma sudadera en Editor fácil y Modelo 3D</div></div></div></div>`;
+   const p=products[currentProduct];
+   h=`<h2>${p.name}</h2><p>${p.description}</p>
+   <div class="card"><div class="cardTitle">Producto actual</div>
+   <div style="display:flex;gap:10px;align-items:center"><div style="width:62px;height:72px;background:#eef1f6;border-radius:12px;display:grid;place-items:center"><img src="${p.sources.front}" style="max-width:56px;max-height:68px"></div>
+   <div style="min-width:0"><b style="font-size:12px">${p.name}</b><div style="color:#8996bd;font-size:10px;margin-top:3px">${p.fit} · ${faceName(currentFace)}</div></div></div>
+   <button class="btn wide" id="backToStudio" style="margin-top:10px">Prendas y mis proyectos</button></div>`;
  } else if(activeTool==='colors'){
    const sw=['#e1e2e6','#111216','#8b8f98','#344d7b','#536558','#72555a','#d6c2a2','#5a3b67'];
-   h=`<h2>Colores</h2><p>El color se aplica a la misma sudadera en frente, espalda y lados, tanto en Editor fácil como en Modelo 3D.</p>
-   <div class="card"><div class="cardTitle">Color de la sudadera</div>
-   <input id="hoodColor" type="color" value="${hoodieColor}">
-   <div class="swatches" style="margin-top:10px">${sw.map(c=>`<button class="swatch ${c===hoodieColor?'active':''}" data-color="${c}" style="background:${c}"></button>`).join('')}</div></div>`;
+   h=`<h2>Colores</h2><p>El color se aplica a la prenda completa en frente, espalda y lados.</p>
+   <div class="card"><div class="cardTitle">Color de la prenda</div>
+   <input id="hoodColor" type="color" value="${garmentColor}">
+   <div class="swatches" style="margin-top:10px">${sw.map(c=>`<button class="swatch ${c===garmentColor?'active':''}" data-color="${c}" style="background:${c}"></button>`).join('')}</div></div>`;
  } else if(activeTool==='text'){
-   h=`<h2>Textos</h2><p>Agrega texto y muévelo directamente sobre la sudadera.</p>
+   h=`<h2>Textos</h2><p>Agrega texto y muévelo directamente sobre la prenda.</p>
    <div class="card"><label>Texto</label><input id="textValue" type="text" value="ONLY UNBROKEN" maxlength="60">
    <div class="row"><div><label>Tipografía</label><select id="fontValue"><option>Impact</option><option>Arial Black</option><option>Georgia</option><option>Courier New</option></select></div>
    <div style="max-width:64px"><label>Color</label><input id="textColor" type="color" value="#111111"></div></div>
    <button class="btn primary wide" id="addText" style="margin-top:10px">Agregar texto</button></div>`;
  } else if(activeTool==='images'){
-   h=`<h2>Imágenes</h2><p>Sube PNG, JPG o WEBP. Después arrástralo como en un editor de mockups.</p>
+   h=`<h2>Imágenes</h2><p>Sube PNG, JPG o WEBP. Después arrástralo sobre el mockup.</p>
    <div class="card"><div class="uploadBox">Selecciona tu diseño<br><br><input id="imgUpload" type="file" accept="image/png,image/jpeg,image/webp"></div></div>`;
  } else if(activeTool==='pencil'){
-   h=`<h2>Apple Pencil</h2><p>Dibuja, luego inserta el dibujo sobre la sudadera.</p>
+   h=`<h2>Apple Pencil</h2><p>Dibuja, luego inserta el dibujo sobre la prenda.</p>
    <div class="card"><canvas id="pencilCanvas" class="pencilPad" width="1600" height="1200"></canvas>
    <div class="row"><div><label>Color</label><input id="pencilColor" type="color" value="#111111"></div><div><label>Grosor</label><input id="pencilSize" type="range" min="3" max="45" value="14"></div></div>
    <div class="row" style="margin-top:9px"><button class="btn" id="pencilClear">Limpiar</button><button class="btn primary" id="pencilAdd">Agregar dibujo</button></div></div>`;
@@ -575,6 +735,10 @@ function layersHTML(){
  return layers.slice().reverse().map(l=>`<div class="layerItem ${l.id===selectedId?'active':''}" data-layer="${l.id}"><div class="layerThumb"><img src="${l.data}"></div><div class="layerText"><b>${l.name}</b><span>${l.type} · ${faceName(l.face||'front')}</span></div></div>`).join('');
 }
 function bindPanel(){
+ if(activeTool==='product'&&activeTab==='design'){
+   const back=$('#backToStudio');
+   if(back)back.onclick=()=>showDashboard();
+ }
  if(activeTab==='library') panel.querySelectorAll('[data-lib]').forEach(b=>b.onclick=()=>addLayer(library[+b.dataset.lib].data,library[+b.dataset.lib].name,'imagen'));
  if(activeTab==='templates') panel.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>addTextLayer(b.dataset.template,'Impact','#111111'));
  if(activeTab==='settings'){
@@ -583,8 +747,8 @@ function bindPanel(){
    $('#clearAll').onclick=()=>{layers=[];selectedId=null;renderLayers();saveState();renderPanel();notify('Diseños eliminados')};
  }
  if(activeTool==='colors'&&activeTab==='design'){
-   $('#hoodColor').oninput=e=>{hoodieColor=e.target.value;faceBaseCache.clear();renderGarment();renderAll3D();saveState()};
-   panel.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{hoodieColor=b.dataset.color;faceBaseCache.clear();renderGarment();renderAll3D();saveState();renderPanel()});
+   $('#hoodColor').oninput=e=>{garmentColor=e.target.value;faceBaseCache.clear();renderGarment();renderAll3D();saveState()};
+   panel.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{garmentColor=b.dataset.color;faceBaseCache.clear();renderGarment();renderAll3D();saveState();renderPanel()});
  }
  if(activeTool==='text'&&activeTab==='design') $('#addText').onclick=()=>addTextLayer($('#textValue').value,$('#fontValue').value,$('#textColor').value);
  if(activeTool==='images'&&activeTab==='design') $('#imgUpload').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{library.push({name:f.name,data:r.result});addLayer(r.result,f.name,'imagen');saveState()};r.readAsDataURL(f)};
@@ -715,7 +879,7 @@ function setView(mode){
    renderAll3D();
    snap3DToFace(currentFace,true);
    const done=$('#doneEditBtn');if(done)done.style.display='none';
-   notify('Modelo 3D listo · misma sudadera · arrastra para girar');
+   notify('Modelo 3D listo · arrastra para girar');
  } else {
    local3d.style.display='none';
    $('#artboard').style.display='block';
@@ -785,10 +949,10 @@ designArea.addEventListener('pointerdown',e=>{
  if(e.target===designArea&&!pinchActive&&selectedId)finishEditing();
 });
 
-$('#resetBtn').onclick=()=>{layers=[];selectedId=null;renderLayers();saveState();notify('Editor restablecido')};
+$('#resetBtn').onclick=()=>{layers=[];selectedId=null;renderLayers();saveState();notify('Diseño del proyecto restablecido')};
 $('#centerBtn').onclick=()=>{if(selected()){selected().x=50;selected().y=47;syncLayer(selected());saveState()}else notify('Selecciona un diseño primero')};
 $('#undoBtn').onclick=()=>{const visible=visibleLayers(); if(visible.length){removeLayer(visible[visible.length-1].id); notify('Se deshizo el último diseño de '+faceName(currentFace).toLowerCase())}};
-$('#saveBtn').onclick=()=>{saveState();notify('Proyecto guardado en este iPad')};
+$('#saveBtn').onclick=()=>{saveState();const p=projects.find(x=>x.id===currentProjectId);notify('Proyecto guardado'+(p?' · '+p.name:''))};
 $('#exportBtn').onclick=exportPNG;
 
 function exportPNG(){
@@ -800,11 +964,237 @@ function exportPNG(){
  const gw=1020,gh=1020*garmentCanvas.height/garmentCanvas.width,gx=(1800-gw)/2,gy=(1800-gh)/2;
  x.drawImage(g,gx,gy,gw,gh);
  const jobs=visibleLayers().map(l=>new Promise(res=>{const im=new Image();im.onload=()=>{const w=l.w/100*gw,h=w/l.aspect,px=gx+l.x/100*gw,py=gy+l.y/100*gh;x.save();x.translate(px,py);x.rotate(l.rot*Math.PI/180);x.drawImage(im,-w/2,-h/2,w,h);x.restore();res()};im.src=l.data}));
- Promise.all(jobs).then(()=>{const a=document.createElement('a');a.download='only-unbroken-mockup.png';a.href=c.toDataURL('image/png');a.click();notify('PNG exportado')})
+ Promise.all(jobs).then(()=>{const a=document.createElement('a');a.download=`only-unbroken-${currentProduct}-${currentFace}.png`;a.href=c.toDataURL('image/png');a.click();notify('PNG exportado')})
 }
-function saveState(){try{localStorage.setItem(stateKey,JSON.stringify({hoodieColor,currentFace,yaw3d,editorZoom,layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face})=>({id,data,name,type,aspect,x,y,w,rot,face})),library,showGrid,backgroundMode,seq}))}catch(e){}}
-function loadState(){try{const d=JSON.parse(localStorage.getItem(stateKey)||'null');if(!d)return;hoodieColor=d.hoodieColor||hoodieColor;layers=(d.layers||[]).map(l=>({...l,face:l.face||'front'}));library=d.library||[];showGrid=!!d.showGrid;backgroundMode=d.backgroundMode||'light';currentFace=d.currentFace||'front';yaw3d=typeof d.yaw3d==='number'?d.yaw3d:(faceAngles[currentFace]??0);editorZoom=typeof d.editorZoom==='number'?d.editorZoom:1;seq=d.seq||100;$('#gridbg').style.display=showGrid?'block':'none';$$('[data-face]').forEach(b=>b.classList.toggle('active',b.dataset.face===currentFace))}catch(e){}}
-loadState();setEditorZoom(editorZoom,false);renderGarment();renderLayers();renderAll3D();snap3DToFace(currentFace,false);apply3DRotation(false);renderPanel();
+
+function defaultProjectState(productId){
+ return {
+   product:productId,
+   garmentColor:products[productId].defaultColor,
+   currentFace:'front',
+   yaw3d:0,
+   editorZoom:1,
+   layers:[],
+   library:[],
+   showGrid:false,
+   backgroundMode:'light',
+   seq:1
+ };
+}
+
+function snapshotState(){
+ return {
+   product:currentProduct,
+   garmentColor,
+   currentFace,
+   yaw3d,
+   editorZoom,
+   layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face})=>({id,data,name,type,aspect,x,y,w,rot,face})),
+   library,
+   showGrid,
+   backgroundMode,
+   seq
+ };
+}
+
+function applyProjectState(state){
+ const s=state||defaultProjectState('hoodie');
+ currentProduct=products[s.product]?s.product:'hoodie';
+ garmentColor=s.garmentColor||products[currentProduct].defaultColor;
+ currentFace=s.currentFace||'front';
+ yaw3d=typeof s.yaw3d==='number'?s.yaw3d:(faceAngles[currentFace]??0);
+ editorZoom=typeof s.editorZoom==='number'?s.editorZoom:1;
+ layers=(s.layers||[]).map(l=>({...l,face:l.face||'front'}));
+ library=s.library||[];
+ showGrid=!!s.showGrid;
+ backgroundMode=s.backgroundMode||'light';
+ seq=s.seq||100;
+ selectedId=null;
+ faceBaseCache.clear();
+
+ $('#gridbg').style.display=showGrid?'block':'none';
+ $('#artboard').style.background=backgroundMode==='light'
+   ?'radial-gradient(circle at 50% 42%,#fff 0,#f4f5f9 58%,#e9ebf2 100%)'
+   :'radial-gradient(circle at 50% 42%,#29314b 0,#141b31 68%,#0f1426 100%)';
+ $$('.faceSwitcher [data-face]').forEach(b=>b.classList.toggle('active',b.dataset.face===currentFace));
+
+ setEditorZoom(editorZoom,false);
+ renderGarment();
+ renderLayers();
+ renderAll3D();
+ snap3DToFace(currentFace,false);
+ apply3DRotation(false);
+ renderPanel();
+}
+
+function persistProjects(){
+ try{localStorage.setItem(projectsKey,JSON.stringify(projects))}catch(e){
+   notify('No se pudo guardar. Puede faltar espacio en el navegador.');
+ }
+}
+
+function saveState(){
+ if(!currentProjectId)return;
+ const p=projects.find(x=>x.id===currentProjectId);
+ if(!p)return;
+ p.product=currentProduct;
+ p.state=snapshotState();
+ p.updatedAt=Date.now();
+ persistProjects();
+}
+
+function migrateLegacyProject(){
+ try{
+   const legacy=JSON.parse(localStorage.getItem(legacyStateKey)||'null');
+   if(!legacy)return;
+   const id='legacy-'+Date.now();
+   projects=[{
+     id,
+     name:'Mi Hoodie',
+     product:'hoodie',
+     updatedAt:Date.now(),
+     state:{
+       product:'hoodie',
+       garmentColor:legacy.garmentColor||legacy.hoodieColor||products.hoodie.defaultColor,
+       currentFace:legacy.currentFace||'front',
+       yaw3d:typeof legacy.yaw3d==='number'?legacy.yaw3d:0,
+       editorZoom:typeof legacy.editorZoom==='number'?legacy.editorZoom:1,
+       layers:(legacy.layers||[]).map(l=>({...l,face:l.face||'front'})),
+       library:legacy.library||[],
+       showGrid:!!legacy.showGrid,
+       backgroundMode:legacy.backgroundMode||'light',
+       seq:legacy.seq||100
+     }
+   }];
+   persistProjects();
+ }catch(e){}
+}
+
+function loadProjects(){
+ try{projects=JSON.parse(localStorage.getItem(projectsKey)||'[]')||[]}catch(e){projects=[]}
+ if(!projects.length)migrateLegacyProject();
+}
+
+function nextProjectName(productId){
+ const base=productId==='hoodie'?'Hoodie':'Playera';
+ const n=projects.filter(p=>p.product===productId).length+1;
+ return `${base} ${n}`;
+}
+
+function createProject(productId){
+ if(!products[productId])return;
+ if(currentProjectId)saveState();
+ const id='project-'+Date.now();
+ const p={
+   id,
+   name:nextProjectName(productId),
+   product:productId,
+   updatedAt:Date.now(),
+   state:defaultProjectState(productId)
+ };
+ projects.unshift(p);
+ currentProjectId=id;
+ persistProjects();
+ applyProjectState(p.state);
+ showEditorShell();
+ setTool('product');
+ setView('edit');
+ notify('Proyecto nuevo · '+products[productId].name);
+}
+
+function openProject(id){
+ if(currentProjectId)saveState();
+ const p=projects.find(x=>x.id===id);
+ if(!p)return;
+ currentProjectId=id;
+ applyProjectState(p.state);
+ showEditorShell();
+ setTool('product');
+ setView('edit');
+ notify('Proyecto abierto · '+p.name);
+}
+
+function deleteProject(id){
+ const p=projects.find(x=>x.id===id);
+ if(!p)return;
+ if(!confirm(`¿Eliminar "${p.name}"?`))return;
+ projects=projects.filter(x=>x.id!==id);
+ if(currentProjectId===id)currentProjectId=null;
+ persistProjects();
+ renderDashboard();
+}
+
+function renameProject(id){
+ const p=projects.find(x=>x.id===id);
+ if(!p)return;
+ const name=prompt('Nombre del proyecto',p.name);
+ if(!name||!name.trim())return;
+ p.name=name.trim().slice(0,40);
+ p.updatedAt=Date.now();
+ persistProjects();
+ renderDashboard();
+}
+
+function projectDate(ts){
+ try{return new Intl.DateTimeFormat('es-MX',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).format(new Date(ts))}catch(e){return ''}
+}
+
+function renderDashboard(){
+ if(!projectsGrid)return;
+ if(!projects.length){
+   projectsGrid.innerHTML=`<div class="projectEmpty">Todavía no tienes proyectos.<br>Elige una prenda de la izquierda para empezar.</div>`;
+ }else{
+   projectsGrid.innerHTML=projects
+     .slice()
+     .sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))
+     .map(p=>{
+       const product=products[p.product]||products.hoodie;
+       const count=p.state?.layers?.length||0;
+       return `<article class="projectCard">
+         <div class="projectThumb"><img src="${product.sources.front}" alt=""></div>
+         <div class="projectMeta">
+           <b>${escapeHTML(p.name)}</b>
+           <span>${product.name} · ${count} diseño${count===1?'':'s'}</span>
+           <span>${projectDate(p.updatedAt)}</span>
+         </div>
+         <div class="projectActions">
+           <button class="openProject" data-open-project="${p.id}">Abrir</button>
+           <button data-rename-project="${p.id}">Renombrar</button>
+           <button class="deleteProject" data-delete-project="${p.id}">Eliminar</button>
+         </div>
+       </article>`;
+     }).join('');
+ }
+ projectsGrid.querySelectorAll('[data-open-project]').forEach(b=>b.onclick=()=>openProject(b.dataset.openProject));
+ projectsGrid.querySelectorAll('[data-delete-project]').forEach(b=>b.onclick=()=>deleteProject(b.dataset.deleteProject));
+ projectsGrid.querySelectorAll('[data-rename-project]').forEach(b=>b.onclick=()=>renameProject(b.dataset.renameProject));
+}
+
+function escapeHTML(v){
+ return String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+}
+
+function showDashboard(){
+ if(currentProjectId)saveState();
+ document.body.classList.add('menuOpen');
+ dashboard.style.display='block';
+ workspace.style.display='none';
+ $$('.topnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab==='home'));
+ renderDashboard();
+}
+
+function showEditorShell(){
+ document.body.classList.remove('menuOpen');
+ dashboard.style.display='none';
+ workspace.style.display='grid';
+ $$('.topnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab==='design'));
+}
+
+document.querySelectorAll('[data-create-product]').forEach(b=>b.onclick=()=>createProject(b.dataset.createProduct));
+
+loadProjects();
+showDashboard();
+
 </script>
 </body>
 </html>
