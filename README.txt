@@ -1,7 +1,12 @@
-ONLY UNBROKEN TURNTABLE 3D V11
+ONLY UNBROKEN · EDITOR HQ V13
 
-- Editor fácil sin cambios.
-- Se arregló el problema del Modelo 3D que desaparecía al girarlo de lado.
-- El giro ahora mezcla suavemente frente, derecha, espalda e izquierda.
-- Usa exactamente las mismas imágenes de sudadera del Editor fácil.
-- Colores y diseños siguen sincronizados por cada vista.
+Mantiene todo lo de Editor Move + Zoom V12 y mejora la calidad visual:
+- Misma sudadera e interfaz.
+- Editor fácil con canvas interno 2× para verse más nítido al hacer zoom.
+- Modelo 3D tipo turntable renderizado a 1060×1380 por vista.
+- Diseños renderizados con suavizado de alta calidad en la vista 3D.
+- Textos creados a 2400×720 para conservar mejor detalle.
+- Apple Pencil aumentado a 1600×1200.
+- Exportación PNG aumentada a 1800×1800.
+- Conserva mover diseños entre vistas, botón Listo y zoom.
+- Conserva la misma clave de guardado local para no perder proyectos existentes.

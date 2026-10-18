@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090d1d">
-<title>ONLY UNBROKEN · Turntable 3D V11</title>
+<title>ONLY UNBROKEN · Editor HQ V13</title>
 <style>
 :root{
   --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
@@ -60,7 +60,8 @@ header{
 .viewSwitcher button,.faceSwitcher button,.stageActions button{border:0;background:transparent;color:#566079;border-radius:11px;padding:8px 11px;font-size:11px}
 .viewSwitcher button.active,.faceSwitcher button.active{background:#fff;color:#1a2136;font-weight:800;box-shadow:0 5px 14px #0001}
 .artboard{
-  position:absolute;inset:68px 18px 70px;border-radius:24px;background:
+  position:absolute;
+  touch-action:none;inset:68px 18px 70px;border-radius:24px;background:
   radial-gradient(circle at 50% 42%,#fff 0,#f4f5f9 58%,#e9ebf2 100%);
   border:1px solid #d9deeb;overflow:hidden;box-shadow:inset 0 1px 0 #fff;
 }
@@ -70,14 +71,15 @@ header{
   background-size:30px 30px
 }
 .garmentWrap{
-  position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);
+  position:absolute;left:50%;top:52%;transform:translate(-50%,-50%) scale(var(--editorZoom,1));
+  transform-origin:50% 50%;transition:transform .12s ease;
   width:min(63%,560px);aspect-ratio:530/690;
   filter:drop-shadow(0 26px 18px #27304425)
 }
-#garmentCanvas{position:absolute;inset:0;width:100%;height:100%}
+#garmentCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:auto}
 #designArea{position:absolute;inset:0;touch-action:none}
 .designLayer{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%) rotate(0deg);touch-action:none}
-.designLayer img{display:block;width:100%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.designLayer img{display:block;width:100%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none;image-rendering:auto;backface-visibility:hidden}
 .designLayer.selected{outline:2px dashed #755cff;outline-offset:5px}
 .handle{position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid #6d54ff;box-shadow:0 5px 14px #0003;display:none}
 .designLayer.selected .handle{display:block}
@@ -179,6 +181,7 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
   transform-origin:50% 52%;
   transition:opacity .28s ease, transform .28s ease, filter .28s ease;
   will-change:opacity,transform;
+  image-rendering:auto;
 }
 .hoodieCube.dragging .face3d{transition:none}
 .front3d,.right3d,.back3d,.left3d{transform:none}
@@ -202,12 +205,21 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
 }
 .artboard.view3d{display:none!important}
 
+
+.layerItem{cursor:pointer}
+.layerItem.active{border-color:#7457ff;background:#17204a;box-shadow:inset 0 0 0 1px #7457ff55}
+.faceMoveGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.faceMoveGrid .btn.active{border-color:#8c78ff;background:#231d55;color:#fff}
+.zoomBtn{min-width:38px}
+#zoomResetBtn{min-width:58px}
+#doneEditBtn{display:none;background:linear-gradient(135deg,#7457ff,#df49c7);border:0;color:#fff;font-weight:800}
+
 </style>
 </head>
 <body>
 <div class="app">
 <header>
-  <div class="brand"><div class="logo">OU</div><div><b>ONLY UNBROKEN</b><small>CUSTOMWEAR · TURNTABLE 3D V11</small></div></div>
+  <div class="brand"><div class="logo">OU</div><div><b>ONLY UNBROKEN</b><small>CUSTOMWEAR · EDITOR HQ V13</small></div></div>
   <nav class="topnav">
     <button class="active" data-tab="design">Diseño</button>
     <button data-tab="library">Biblioteca</button>
@@ -239,13 +251,20 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
           <button data-face="left">Izquierda</button>
           <button data-face="right">Derecha</button>
         </div>
-        <div class="stageActions"><button id="resetBtn">Restablecer</button><button id="centerBtn">Centrar diseño</button></div>
+        <div class="stageActions">
+          <button id="zoomOutBtn" class="zoomBtn" title="Alejar">−</button>
+          <button id="zoomResetBtn" title="Restablecer zoom">100%</button>
+          <button id="zoomInBtn" class="zoomBtn" title="Acercar">+</button>
+          <button id="centerBtn">Centrar diseño</button>
+          <button id="doneEditBtn">Listo</button>
+          <button id="resetBtn">Restablecer</button>
+        </div>
       </div>
     </div>
     <div class="artboard" id="artboard">
       <div class="gridbg" id="gridbg"></div>
       <div class="garmentWrap" id="garmentWrap">
-        <canvas id="garmentCanvas" width="530" height="690"></canvas>
+        <canvas id="garmentCanvas" width="1060" height="1380"></canvas>
         <div id="designArea"></div>
       </div>
     </div>
@@ -253,15 +272,15 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
     <div class="local3d" id="local3d">
       <div class="local3dScene" id="local3dScene">
         <div class="hoodieCube" id="hoodieCube">
-          <canvas class="face3d front3d" id="face3d-front" width="530" height="690"></canvas>
-          <canvas class="face3d back3d" id="face3d-back" width="530" height="690"></canvas>
-          <canvas class="face3d left3d" id="face3d-left" width="530" height="690"></canvas>
-          <canvas class="face3d right3d" id="face3d-right" width="530" height="690"></canvas>
+          <canvas class="face3d front3d" id="face3d-front" width="1060" height="1380"></canvas>
+          <canvas class="face3d back3d" id="face3d-back" width="1060" height="1380"></canvas>
+          <canvas class="face3d left3d" id="face3d-left" width="1060" height="1380"></canvas>
+          <canvas class="face3d right3d" id="face3d-right" width="1060" height="1380"></canvas>
         </div>
       </div>
       <div class="local3dHelp">Arrastra para girar. La prenda cambia suavemente entre frente, lados y espalda sin desaparecer.</div>
     </div>
-    <div class="stageHint" id="stageHint"><span class="statusDot"></span>Arrastra el diseño con el dedo o Apple Pencil. Usa las bolitas para girar y agrandar.</div>
+    <div class="stageHint" id="stageHint"><span class="statusDot"></span>Arrastra el diseño. Pellizca o usa +/− para zoom. Vista 3D en alta calidad para evitar pixelado.</div>
   </main>
 
   <aside class="panel" id="panel"></aside>
@@ -270,29 +289,43 @@ input[type=file]::file-selector-button{border:1px solid #344577;background:#151f
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const panel=$('#panel'), designArea=$('#designArea'), garmentCanvas=$('#garmentCanvas'), garmentCtx=garmentCanvas.getContext('2d');
+const panel=$('#panel'), designArea=$('#designArea'), artboard=$('#artboard'), garmentWrap=$('#garmentWrap'), garmentCanvas=$('#garmentCanvas'), garmentCtx=garmentCanvas.getContext('2d');
 const local3d=$('#local3d'), local3dScene=$('#local3dScene'), hoodieCube=$('#hoodieCube');
 const hoodieSources={front:'hoodie_front.png',back:'hoodie_back.png',left:'hoodie_left.png',right:'hoodie_right.png'};
 const hoodieImages=Object.fromEntries(Object.entries(hoodieSources).map(([k,v])=>{const im=new Image();im.src=v;return [k,im]}));
 let hoodieColor='#e1e2e6';
 let activeTool='product', activeTab='design', layers=[], selectedId=null, seq=1, library=[];
-let viewMode='edit', showGrid=false, backgroundMode='light', currentFace='front';
+let viewMode='edit', showGrid=false, backgroundMode='light', currentFace='front', editorZoom=1;
 let yaw3d=0, dragging3d=false, dragStartX=0, dragStartYaw=0;
+const zoomPointers=new Map();
+let pinchActive=false,pinchStartDistance=0,pinchStartZoom=1;
 const faceAngles={front:0,right:-90,back:-180,left:-270};
 const faceOrder=['front','right','back','left'];
 const faceCanvas3D={front:$('#face3d-front'),back:$('#face3d-back'),left:$('#face3d-left'),right:$('#face3d-right')};
 const layerImgCache=new Map();
+const faceBaseCache=new Map();
+const RENDER_W=1060, RENDER_H=1380;
 const stateKey='only_unbroken_turntable_v11';
 
 function hexToRgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
 function faceName(face){return ({front:'Frente',back:'Espalda',left:'Lado izquierdo',right:'Lado derecho'})[face]||'Frente'}
 function currentGarment(){return hoodieImages[currentFace]||hoodieImages.front}
-function renderGarment(){
- const hoodieImg=currentGarment();
- if(!hoodieImg.complete||!hoodieImg.naturalWidth)return;
- garmentCtx.clearRect(0,0,530,690);
- garmentCtx.drawImage(hoodieImg,0,0,530,690);
- const img=garmentCtx.getImageData(0,0,530,690),d=img.data,[r,g,b]=hexToRgb(hoodieColor);
+function getTintedFace(face){
+ const cached=faceBaseCache.get(face);
+ if(cached && cached.color===hoodieColor)return cached.canvas;
+ const img=hoodieImages[face];
+ if(!img || !img.complete || !img.naturalWidth)return null;
+
+ const c=document.createElement('canvas');
+ c.width=RENDER_W;c.height=RENDER_H;
+ const ctx=c.getContext('2d',{willReadFrequently:true});
+ ctx.imageSmoothingEnabled=true;
+ ctx.imageSmoothingQuality='high';
+ ctx.clearRect(0,0,RENDER_W,RENDER_H);
+ ctx.drawImage(img,0,0,RENDER_W,RENDER_H);
+
+ const imageData=ctx.getImageData(0,0,RENDER_W,RENDER_H);
+ const d=imageData.data,[r,g,b]=hexToRgb(hoodieColor);
  for(let i=0;i<d.length;i+=4){
    if(d[i+3]===0)continue;
    const lum=(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)/255;
@@ -302,44 +335,56 @@ function renderGarment(){
    d[i+1]=Math.max(0,Math.min(255,g*shade+detail));
    d[i+2]=Math.max(0,Math.min(255,b*shade+detail));
  }
- garmentCtx.putImageData(img,0,0);
+ ctx.putImageData(imageData,0,0);
+ faceBaseCache.set(face,{color:hoodieColor,canvas:c});
+ return c;
 }
-Object.values(hoodieImages).forEach(im=>im.onload=()=>{if(currentGarment().complete) renderGarment();renderAll3D()});
 
+function renderGarment(){
+ const base=getTintedFace(currentFace);
+ if(!base)return;
+ garmentCtx.imageSmoothingEnabled=true;
+ garmentCtx.imageSmoothingQuality='high';
+ garmentCtx.clearRect(0,0,garmentCanvas.width,garmentCanvas.height);
+ garmentCtx.drawImage(base,0,0,garmentCanvas.width,garmentCanvas.height);
+}
+
+Object.entries(hoodieImages).forEach(([face,im])=>im.onload=()=>{
+ faceBaseCache.delete(face);
+ if(face===currentFace)renderGarment();
+ renderAll3D(face);
+});
 
 function tintGarmentToCanvas(face,targetCanvas){
- const img=hoodieImages[face];
- if(!img || !img.complete || !img.naturalWidth)return;
+ const base=getTintedFace(face);
+ if(!base)return;
  const tx=targetCanvas.getContext('2d');
- tx.clearRect(0,0,530,690);
- tx.drawImage(img,0,0,530,690);
- const data=tx.getImageData(0,0,530,690),d=data.data,[r,g,b]=hexToRgb(hoodieColor);
- for(let i=0;i<d.length;i+=4){
-   if(d[i+3]===0)continue;
-   const lum=(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)/255;
-   const shade=Math.max(.3,Math.min(1.16,.2+lum*1.02));
-   const detail=(lum-.62)*18;
-   d[i]=Math.max(0,Math.min(255,r*shade+detail));
-   d[i+1]=Math.max(0,Math.min(255,g*shade+detail));
-   d[i+2]=Math.max(0,Math.min(255,b*shade+detail));
- }
- tx.putImageData(data,0,0);
+ const W=targetCanvas.width,H=targetCanvas.height;
+ tx.imageSmoothingEnabled=true;
+ tx.imageSmoothingQuality='high';
+ tx.clearRect(0,0,W,H);
+ tx.drawImage(base,0,0,W,H);
 
  const faceLayers=layers.filter(l=>(l.face||'front')===face);
  faceLayers.forEach(l=>{
    let im=layerImgCache.get(l.data);
    if(!im){
      im=new Image();
-     im.onload=()=>renderAll3D();
+     im.decoding='async';
+     im.onload=()=>renderAll3D(face);
      im.src=l.data;
      layerImgCache.set(l.data,im);
    }
    if(!im.complete || !im.naturalWidth)return;
-   const w=l.w/100*530;
+
+   const w=l.w/100*W;
    const h=w/(l.aspect||1);
-   const x=l.x/100*530;
-   const y=l.y/100*690;
+   const x=l.x/100*W;
+   const y=l.y/100*H;
+
    tx.save();
+   tx.imageSmoothingEnabled=true;
+   tx.imageSmoothingQuality='high';
    tx.translate(x,y);
    tx.rotate((l.rot||0)*Math.PI/180);
    tx.drawImage(im,-w/2,-h/2,w,h);
@@ -347,7 +392,11 @@ function tintGarmentToCanvas(face,targetCanvas){
  });
 }
 
-function renderAll3D(){
+function renderAll3D(faceOnly=null){
+ if(faceOnly && faceCanvas3D[faceOnly]){
+   tintGarmentToCanvas(faceOnly,faceCanvas3D[faceOnly]);
+   return;
+ }
  Object.keys(faceCanvas3D).forEach(face=>tintGarmentToCanvas(face,faceCanvas3D[face]));
 }
 
@@ -499,14 +548,20 @@ function renderPanel(){
    <div class="card"><div class="uploadBox">Selecciona tu diseño<br><br><input id="imgUpload" type="file" accept="image/png,image/jpeg,image/webp"></div></div>`;
  } else if(activeTool==='pencil'){
    h=`<h2>Apple Pencil</h2><p>Dibuja, luego inserta el dibujo sobre la sudadera.</p>
-   <div class="card"><canvas id="pencilCanvas" class="pencilPad" width="900" height="675"></canvas>
+   <div class="card"><canvas id="pencilCanvas" class="pencilPad" width="1600" height="1200"></canvas>
    <div class="row"><div><label>Color</label><input id="pencilColor" type="color" value="#111111"></div><div><label>Grosor</label><input id="pencilSize" type="range" min="3" max="45" value="14"></div></div>
    <div class="row" style="margin-top:9px"><button class="btn" id="pencilClear">Limpiar</button><button class="btn primary" id="pencilAdd">Agregar dibujo</button></div></div>`;
  } else if(activeTool==='layers'){
-   h=`<h2>Capas</h2><p>Selecciona un elemento para editarlo.</p><div class="card">${layersHTML()}</div>
-   ${selected()?`<div class="card"><div class="cardTitle">Seleccionado</div><label>Tamaño</label><input id="layerSize" type="range" min="8" max="80" value="${selected().w}">
+   h=`<h2>Capas</h2><p>Aquí aparecen los diseños de todas las vistas. Toca uno para ir directo a él y editarlo.</p><div class="card">${layersHTML()}</div>
+   ${selected()?`<div class="card"><div class="cardTitle">Seleccionado · ${faceName(selected().face||'front')}</div>
+   <label>Tamaño</label><input id="layerSize" type="range" min="8" max="80" value="${selected().w}">
    <label>Rotación</label><input id="layerRot" type="range" min="-180" max="180" value="${selected().rot}">
-   <button class="btn wide" id="centerSelected" style="margin-top:8px">Centrar</button><button class="btn wide" id="deleteSelected" style="margin-top:7px;color:#ff9aa5">Eliminar</button></div>`:''}`;
+   <label>Mover este diseño a otra vista</label>
+   <div class="faceMoveGrid">
+     ${['front','back','left','right'].map(f=>`<button class="btn ${f===(selected().face||'front')?'active':''}" data-move-face="${f}">${faceName(f)}</button>`).join('')}
+   </div>
+   <div class="row" style="margin-top:8px"><button class="btn" id="centerSelected">Centrar</button><button class="btn primary" id="finishSelected">Listo · dejar de editar</button></div>
+   <button class="btn wide" id="deleteSelected" style="margin-top:7px;color:#ff9aa5">Eliminar</button></div>`:''}`;
  }
  panel.innerHTML=h; bindPanel();
 }
@@ -516,9 +571,8 @@ function libraryHTML(){
 }
 function visibleLayers(){return layers.filter(l=>(l.face||'front')===currentFace)}
 function layersHTML(){
- const visible=visibleLayers();
- if(!visible.length)return `<div style="color:#8190ba;font-size:10px;text-align:center;padding:14px">No hay diseños en ${faceName(currentFace).toLowerCase()}.</div>`;
- return visible.slice().reverse().map(l=>`<div class="layerItem" data-layer="${l.id}"><div class="layerThumb"><img src="${l.data}"></div><div class="layerText"><b>${l.name}</b><span>${l.type} · ${faceName(l.face||'front')}</span></div></div>`).join('');
+ if(!layers.length)return `<div style="color:#8190ba;font-size:10px;text-align:center;padding:14px">Todavía no hay diseños.</div>`;
+ return layers.slice().reverse().map(l=>`<div class="layerItem ${l.id===selectedId?'active':''}" data-layer="${l.id}"><div class="layerThumb"><img src="${l.data}"></div><div class="layerText"><b>${l.name}</b><span>${l.type} · ${faceName(l.face||'front')}</span></div></div>`).join('');
 }
 function bindPanel(){
  if(activeTab==='library') panel.querySelectorAll('[data-lib]').forEach(b=>b.onclick=()=>addLayer(library[+b.dataset.lib].data,library[+b.dataset.lib].name,'imagen'));
@@ -529,27 +583,39 @@ function bindPanel(){
    $('#clearAll').onclick=()=>{layers=[];selectedId=null;renderLayers();saveState();renderPanel();notify('Diseños eliminados')};
  }
  if(activeTool==='colors'&&activeTab==='design'){
-   $('#hoodColor').oninput=e=>{hoodieColor=e.target.value;renderGarment();renderAll3D();saveState()};
-   panel.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{hoodieColor=b.dataset.color;renderGarment();renderAll3D();saveState();renderPanel()});
+   $('#hoodColor').oninput=e=>{hoodieColor=e.target.value;faceBaseCache.clear();renderGarment();renderAll3D();saveState()};
+   panel.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{hoodieColor=b.dataset.color;faceBaseCache.clear();renderGarment();renderAll3D();saveState();renderPanel()});
  }
  if(activeTool==='text'&&activeTab==='design') $('#addText').onclick=()=>addTextLayer($('#textValue').value,$('#fontValue').value,$('#textColor').value);
  if(activeTool==='images'&&activeTab==='design') $('#imgUpload').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{library.push({name:f.name,data:r.result});addLayer(r.result,f.name,'imagen');saveState()};r.readAsDataURL(f)};
  if(activeTool==='pencil'&&activeTab==='design') setupPencil();
  if(activeTool==='layers'&&activeTab==='design'){
-   panel.querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{selectedId=+b.dataset.layer;renderLayers();renderPanel()});
+   panel.querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{
+     selectedId=+b.dataset.layer;
+     const l=selected();
+     if(l){
+       currentFace=l.face||'front';
+       $$('.faceSwitcher [data-face]').forEach(x=>x.classList.toggle('active',x.dataset.face===currentFace));
+       if(viewMode==='edit')renderGarment();
+     }
+     renderLayers();renderPanel();saveState();
+   });
    if(selected()){
      $('#layerSize').oninput=e=>{selected().w=+e.target.value;syncLayer(selected());saveState()};
      $('#layerRot').oninput=e=>{selected().rot=+e.target.value;syncLayer(selected());saveState()};
      $('#centerSelected').onclick=()=>{selected().x=50;selected().y=47;syncLayer(selected());saveState()};
+     panel.querySelectorAll('[data-move-face]').forEach(b=>b.onclick=()=>moveSelectedToFace(b.dataset.moveFace));
+     $('#finishSelected').onclick=finishEditing;
      $('#deleteSelected').onclick=()=>removeLayer(selected().id);
    }
  }
 }
 function textImage(text,font,color){
- const c=document.createElement('canvas');c.width=1200;c.height=360;const x=c.getContext('2d');
+ const c=document.createElement('canvas');c.width=2400;c.height=720;const x=c.getContext('2d');
+ x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
  x.clearRect(0,0,c.width,c.height);x.fillStyle=color;x.textAlign='center';x.textBaseline='middle';
- let size=150;x.font=`900 ${size}px "${font}"`;while(x.measureText(text).width>1080&&size>45){size-=5;x.font=`900 ${size}px "${font}"`}
- x.fillText(text||'ONLY UNBROKEN',600,180);
+ let size=300;x.font=`900 ${size}px "${font}"`;while(x.measureText(text).width>2160&&size>90){size-=10;x.font=`900 ${size}px "${font}"`}
+ x.fillText(text||'ONLY UNBROKEN',1200,360);
  return c.toDataURL('image/png');
 }
 function addTextLayer(text,font,color){addLayer(textImage(text,font,color),text||'Texto','texto')}
@@ -565,11 +631,13 @@ function renderLayers(){
    el.innerHTML=`<img src="${l.data}"><span class="handle rotate"></span><span class="handle resize"></span><span class="handle delete">×</span><span class="dragLabel">Mover</span>`;
    designArea.appendChild(el);bindLayer(el,l);
  });
+ const done=$('#doneEditBtn');
+ if(done)done.style.display=(selectedId&&viewMode==='edit')?'inline-block':'none';
  renderAll3D();
 }
 function syncLayer(l){
  const el=designArea.querySelector(`[data-id="${l.id}"]`);if(el){el.style.left=l.x+'%';el.style.top=l.y+'%';el.style.width=l.w+'%';el.style.transform=`translate(-50%,-50%) rotate(${l.rot}deg)`;}
- renderAll3D();
+ renderAll3D(l.face||currentFace);
 }
 function bindLayer(el,l){
  const resize=el.querySelector('.resize'),rotate=el.querySelector('.rotate'),del=el.querySelector('.delete');
@@ -577,7 +645,7 @@ function bindLayer(el,l){
    if(e.target===resize||e.target===rotate||e.target===del)return;
    e.preventDefault();selectedId=l.id;renderLayers();if(activeTool==='layers')renderPanel();
    const area=designArea.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,ox=l.x,oy=l.y;
-   const move=ev=>{l.x=Math.max(4,Math.min(96,ox+(ev.clientX-sx)/area.width*100));l.y=Math.max(5,Math.min(95,oy+(ev.clientY-sy)/area.height*100));syncLayer(l)};
+   const move=ev=>{if(pinchActive)return;l.x=Math.max(4,Math.min(96,ox+(ev.clientX-sx)/area.width*100));l.y=Math.max(5,Math.min(95,oy+(ev.clientY-sy)/area.height*100));syncLayer(l)};
    const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);saveState()};
    window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
  };
@@ -596,6 +664,32 @@ function bindLayer(el,l){
  del.onpointerdown=e=>{e.preventDefault();e.stopPropagation();removeLayer(l.id)};
 }
 function removeLayer(id){layers=layers.filter(x=>x.id!==id);if(selectedId===id)selectedId=null;renderLayers();saveState();renderPanel()}
+
+function finishEditing(){
+ if(!selectedId)return;
+ selectedId=null;
+ renderLayers();
+ if(activeTool==='layers')renderPanel();
+ saveState();
+ notify('Diseño listo. Tócalo otra vez cuando quieras volver a editarlo.');
+}
+function moveSelectedToFace(face){
+ const l=selected();if(!l)return;
+ const oldFace=l.face||'front';
+ l.face=face;
+ currentFace=face;
+ $$('.faceSwitcher [data-face]').forEach(b=>b.classList.toggle('active',b.dataset.face===face));
+ if(viewMode==='edit'){renderGarment();renderLayers()}else{renderAll3D(oldFace);renderAll3D(face);snap3DToFace(face,true)}
+ renderPanel();saveState();
+ notify('Diseño movido a '+faceName(face).toLowerCase()+'. Puedes seguir acomodándolo sin volver a agregarlo.');
+}
+function setEditorZoom(value,save=true){
+ editorZoom=Math.max(.6,Math.min(2.4,value));
+ garmentWrap.style.setProperty('--editorZoom',editorZoom.toFixed(3));
+ const z=$('#zoomResetBtn');if(z)z.textContent=Math.round(editorZoom*100)+'%';
+ if(save)saveState();
+}
+
 function setupPencil(){
  const c=$('#pencilCanvas'),x=c.getContext('2d');x.lineCap='round';x.lineJoin='round';let drawing=false,last=null;
  const pos=e=>{const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}};
@@ -620,12 +714,14 @@ function setView(mode){
    local3d.style.display='block';
    renderAll3D();
    snap3DToFace(currentFace,true);
+   const done=$('#doneEditBtn');if(done)done.style.display='none';
    notify('Modelo 3D listo · misma sudadera · arrastra para girar');
  } else {
    local3d.style.display='none';
    $('#artboard').style.display='block';
    renderGarment();
    renderLayers();
+   const done=$('#doneEditBtn');if(done)done.style.display=selectedId?'inline-block':'none';
    notify('Editor fácil listo · vista '+faceName(currentFace).toLowerCase());
  }
 }
@@ -646,6 +742,49 @@ function setFace(face){
  saveState();
  notify((viewMode==='3d'?'Modelo 3D':'Editor fácil')+' · vista '+faceName(face).toLowerCase());
 }
+
+$('#zoomOutBtn').onclick=()=>setEditorZoom(editorZoom-.15);
+$('#zoomInBtn').onclick=()=>setEditorZoom(editorZoom+.15);
+$('#zoomResetBtn').onclick=()=>setEditorZoom(1);
+$('#doneEditBtn').onclick=finishEditing;
+
+function pointerDistance(){
+ const pts=[...zoomPointers.values()];
+ if(pts.length<2)return 0;
+ return Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+}
+artboard.addEventListener('pointerdown',e=>{
+ if(viewMode!=='edit'||e.pointerType==='mouse')return;
+ zoomPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(zoomPointers.size===2){
+   pinchActive=true;
+   pinchStartDistance=pointerDistance();
+   pinchStartZoom=editorZoom;
+ }
+},true);
+artboard.addEventListener('pointermove',e=>{
+ if(!zoomPointers.has(e.pointerId))return;
+ zoomPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(pinchActive&&zoomPointers.size>=2){
+   const d=pointerDistance();
+   if(pinchStartDistance>0)setEditorZoom(pinchStartZoom*(d/pinchStartDistance),false);
+   e.preventDefault();
+ }
+},true);
+const endZoomPointer=e=>{
+ zoomPointers.delete(e.pointerId);
+ if(zoomPointers.size<2){
+   if(pinchActive)saveState();
+   pinchActive=false;
+ }
+};
+artboard.addEventListener('pointerup',endZoomPointer,true);
+artboard.addEventListener('pointercancel',endZoomPointer,true);
+
+designArea.addEventListener('pointerdown',e=>{
+ if(e.target===designArea&&!pinchActive&&selectedId)finishEditing();
+});
+
 $('#resetBtn').onclick=()=>{layers=[];selectedId=null;renderLayers();saveState();notify('Editor restablecido')};
 $('#centerBtn').onclick=()=>{if(selected()){selected().x=50;selected().y=47;syncLayer(selected());saveState()}else notify('Selecciona un diseño primero')};
 $('#undoBtn').onclick=()=>{const visible=visibleLayers(); if(visible.length){removeLayer(visible[visible.length-1].id); notify('Se deshizo el último diseño de '+faceName(currentFace).toLowerCase())}};
@@ -653,17 +792,19 @@ $('#saveBtn').onclick=()=>{saveState();notify('Proyecto guardado en este iPad')}
 $('#exportBtn').onclick=exportPNG;
 
 function exportPNG(){
- const c=document.createElement('canvas');c.width=1200;c.height=1200;const x=c.getContext('2d');
+ const c=document.createElement('canvas');c.width=1800;c.height=1800;const x=c.getContext('2d');
+ x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
  x.fillStyle=backgroundMode==='light'?'#f2f4f8':'#151b31';x.fillRect(0,0,c.width,c.height);
- const g=document.createElement('canvas');g.width=530;g.height=690;g.getContext('2d').drawImage(garmentCanvas,0,0);
- const gw=680,gh=680*690/530,gx=(1200-gw)/2,gy=(1200-gh)/2;
+ const g=document.createElement('canvas');g.width=garmentCanvas.width;g.height=garmentCanvas.height;
+ const gx2=g.getContext('2d');gx2.imageSmoothingEnabled=true;gx2.imageSmoothingQuality='high';gx2.drawImage(garmentCanvas,0,0);
+ const gw=1020,gh=1020*garmentCanvas.height/garmentCanvas.width,gx=(1800-gw)/2,gy=(1800-gh)/2;
  x.drawImage(g,gx,gy,gw,gh);
  const jobs=visibleLayers().map(l=>new Promise(res=>{const im=new Image();im.onload=()=>{const w=l.w/100*gw,h=w/l.aspect,px=gx+l.x/100*gw,py=gy+l.y/100*gh;x.save();x.translate(px,py);x.rotate(l.rot*Math.PI/180);x.drawImage(im,-w/2,-h/2,w,h);x.restore();res()};im.src=l.data}));
  Promise.all(jobs).then(()=>{const a=document.createElement('a');a.download='only-unbroken-mockup.png';a.href=c.toDataURL('image/png');a.click();notify('PNG exportado')})
 }
-function saveState(){try{localStorage.setItem(stateKey,JSON.stringify({hoodieColor,currentFace,yaw3d,layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face})=>({id,data,name,type,aspect,x,y,w,rot,face})),library,showGrid,backgroundMode,seq}))}catch(e){}}
-function loadState(){try{const d=JSON.parse(localStorage.getItem(stateKey)||'null');if(!d)return;hoodieColor=d.hoodieColor||hoodieColor;layers=(d.layers||[]).map(l=>({...l,face:l.face||'front'}));library=d.library||[];showGrid=!!d.showGrid;backgroundMode=d.backgroundMode||'light';currentFace=d.currentFace||'front';yaw3d=typeof d.yaw3d==='number'?d.yaw3d:(faceAngles[currentFace]??0);seq=d.seq||100;$('#gridbg').style.display=showGrid?'block':'none';$$('[data-face]').forEach(b=>b.classList.toggle('active',b.dataset.face===currentFace))}catch(e){}}
-loadState();renderGarment();renderLayers();renderAll3D();snap3DToFace(currentFace,false);apply3DRotation(false);renderPanel();
+function saveState(){try{localStorage.setItem(stateKey,JSON.stringify({hoodieColor,currentFace,yaw3d,editorZoom,layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face})=>({id,data,name,type,aspect,x,y,w,rot,face})),library,showGrid,backgroundMode,seq}))}catch(e){}}
+function loadState(){try{const d=JSON.parse(localStorage.getItem(stateKey)||'null');if(!d)return;hoodieColor=d.hoodieColor||hoodieColor;layers=(d.layers||[]).map(l=>({...l,face:l.face||'front'}));library=d.library||[];showGrid=!!d.showGrid;backgroundMode=d.backgroundMode||'light';currentFace=d.currentFace||'front';yaw3d=typeof d.yaw3d==='number'?d.yaw3d:(faceAngles[currentFace]??0);editorZoom=typeof d.editorZoom==='number'?d.editorZoom:1;seq=d.seq||100;$('#gridbg').style.display=showGrid?'block':'none';$$('[data-face]').forEach(b=>b.classList.toggle('active',b.dataset.face===currentFace))}catch(e){}}
+loadState();setEditorZoom(editorZoom,false);renderGarment();renderLayers();renderAll3D();snap3DToFace(currentFace,false);apply3DRotation(false);renderPanel();
 </script>
 </body>
 </html>
