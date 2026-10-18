@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#090d1d">
-<title>ONLY UNBROKEN · Studio V24</title>
+<title>ONLY UNBROKEN · Studio V25</title>
 <style>
 :root{
   --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
@@ -1180,7 +1180,7 @@ function recolorTextureLayer(layer,color){
  notify('Color de textura actualizado');
 }
 
-function hexToRgb(hex){
+function hexToRgbObject(hex){
  const clean=(hex||'#ffffff').replace('#','');
  const n=parseInt(clean.length===3?clean.split('').map(c=>c+c).join(''):clean,16);
  return {r:(n>>16)&255,g:(n>>8)&255,b:n&255};
@@ -1212,7 +1212,7 @@ function styleImageLayer(layer,mode='original',tintColor='#ffffff',boost=100){
    x.drawImage(im,0,0);
    const img=x.getImageData(0,0,c.width,c.height);
    const d=img.data;
-   const rgb=hexToRgb(tintColor);
+   const rgb=hexToRgbObject(tintColor);
    const gain=layer.imageBoost/100;
 
    for(let i=0;i<d.length;i+=4){
