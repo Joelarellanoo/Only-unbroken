@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#090d1d">
-<title>ONLY UNBROKEN · Studio V19</title>
+<title>ONLY UNBROKEN · Studio V20</title>
 <style>
 :root{
   --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
@@ -460,6 +460,7 @@ const studioDBStore='autosave';
 let projects=[];
 let currentProjectId=null;
 let autosaveTimer=null;
+let templateColor='#111111';
 
 function openStudioDB(){
  return new Promise((resolve,reject)=>{
@@ -731,9 +732,14 @@ function renderPanel(){
    h=`<h2>Biblioteca</h2><p>Tus diseños subidos aparecen aquí. Tócalos para agregarlos.</p>
    <div class="card"><div class="cardTitle">Tus archivos</div><div class="libraryGrid" id="libraryGrid">${libraryHTML()}</div></div>`;
  } else if(activeTab==='templates'){
-   h=`<h2>Plantillas</h2><p>Textos rápidos para empezar y luego moverlos directamente sobre la prenda.</p>
+   const tsw=['#111111','#ffffff','#e6dfcf','#8f93a3','#314c7a','#6e4b58','#4c624f','#7a5c86'];
+   h=`<h2>Plantillas</h2><p>Elige el color y luego toca una plantilla. Después también puedes cambiarle el color desde Capas.</p>
+   <div class="card"><div class="cardTitle">Color de la plantilla</div>
+   <input id="templateColor" type="color" value="${templateColor}">
+   <div class="swatches" style="margin-top:10px">${tsw.map(c=>`<button class="swatch ${c===templateColor?'active':''}" data-template-color="${c}" style="background:${c}"></button>`).join('')}</div>
+   </div>
    <div class="card"><div class="cardTitle">Streetwear</div><div class="templateGrid">
-   ${['ONLY UNBROKEN','NEVER FOLD','KEEP GOING','RESILIENCE','NO LIMITS','STAY REAL'].map(t=>`<button class="template" data-template="${t}"><strong>${t}</strong></button>`).join('')}
+   ${['ONLY UNBROKEN','NEVER FOLD','KEEP GOING','RESILIENCE','NO LIMITS','STAY REAL'].map(t=>`<button class="template" data-template="${t}" style="background:#f3f4f7;color:${templateColor};border-color:#d5d9e3"><strong>${t}</strong></button>`).join('')}
    </div></div>`;
  } else if(activeTab==='settings'){
    h=`<h2>Ajustes</h2><p>Configura la mesa de trabajo.</p>
@@ -770,6 +776,9 @@ function renderPanel(){
  } else if(activeTool==='layers'){
    h=`<h2>Capas</h2><p>Aquí aparecen los diseños de todas las vistas. Toca uno para ir directo a él y editarlo.</p><div class="card">${layersHTML()}</div>
    ${selected()?`<div class="card"><div class="cardTitle">Seleccionado · ${faceName(selected().face||'front')}</div>
+   ${selected().type==='plantilla'?`<label>Color de la plantilla</label>
+   <input id="selectedTemplateColor" type="color" value="${selected().textColor||'#111111'}">
+   <div class="swatches" style="margin:8px 0 10px">${['#111111','#ffffff','#e6dfcf','#8f93a3','#314c7a','#6e4b58','#4c624f','#7a5c86'].map(c=>`<button class="swatch ${c===(selected().textColor||'#111111')?'active':''}" data-selected-template-color="${c}" style="background:${c}"></button>`).join('')}</div>`:''}
    <label>Tamaño</label><input id="layerSize" type="range" min="8" max="80" value="${selected().w}">
    <label>Rotación</label><input id="layerRot" type="range" min="-180" max="180" value="${selected().rot}">
    <label>Mover este diseño a otra vista</label>
@@ -796,7 +805,12 @@ function bindPanel(){
    if(back)back.onclick=()=>showDashboard();
  }
  if(activeTab==='library') panel.querySelectorAll('[data-lib]').forEach(b=>b.onclick=()=>addLayer(library[+b.dataset.lib].data,library[+b.dataset.lib].name,'imagen'));
- if(activeTab==='templates') panel.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>addTextLayer(b.dataset.template,'Impact','#111111'));
+ if(activeTab==='templates'){
+   const tc=$('#templateColor');
+   if(tc)tc.oninput=e=>{templateColor=e.target.value;renderPanel()};
+   panel.querySelectorAll('[data-template-color]').forEach(b=>b.onclick=()=>{templateColor=b.dataset.templateColor;renderPanel()});
+   panel.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>addTextLayer(b.dataset.template,'Impact',templateColor,'plantilla'));
+ }
  if(activeTab==='settings'){
    $('#toggleGrid').onclick=()=>{showGrid=!showGrid;$('#gridbg').style.display=showGrid?'block':'none';renderPanel()};
    $('#toggleBg').onclick=()=>{backgroundMode=backgroundMode==='light'?'dark':'light';$('#artboard').style.background=backgroundMode==='light'?'radial-gradient(circle at 50% 42%,#fff 0,#f4f5f9 58%,#e9ebf2 100%)':'radial-gradient(circle at 50% 42%,#29314b 0,#141b31 68%,#0f1426 100%)';renderPanel()};
@@ -821,6 +835,11 @@ function bindPanel(){
      renderLayers();renderPanel();saveState();
    });
    if(selected()){
+     if(selected().type==='plantilla'){
+       const sc=$('#selectedTemplateColor');
+       if(sc)sc.oninput=e=>recolorTemplateLayer(selected(),e.target.value);
+       panel.querySelectorAll('[data-selected-template-color]').forEach(b=>b.onclick=()=>recolorTemplateLayer(selected(),b.dataset.selectedTemplateColor));
+     }
      $('#layerSize').oninput=e=>{selected().w=+e.target.value;syncLayer(selected());saveState()};
      $('#layerRot').oninput=e=>{selected().rot=+e.target.value;syncLayer(selected());saveState()};
      $('#centerSelected').onclick=()=>{selected().x=50;selected().y=47;syncLayer(selected());saveState()};
@@ -838,9 +857,37 @@ function textImage(text,font,color){
  x.fillText(text||'ONLY UNBROKEN',1200,360);
  return c.toDataURL('image/png');
 }
-function addTextLayer(text,font,color){addLayer(textImage(text,font,color),text||'Texto','texto')}
-function addLayer(data,name,type){
- const im=new Image();im.onload=()=>{const aspect=im.width/im.height;layers.push({id:seq++,data,name,type,aspect,x:50,y:47,w:Math.min(36,Math.max(18,22*aspect)),rot:0,face:currentFace});selectedId=layers[layers.length-1].id;renderLayers();saveState();notify('Diseño agregado en '+faceName(currentFace).toLowerCase()+'. Arrástralo con el dedo o Apple Pencil.');setTool('layers')};im.src=data;
+function addTextLayer(text,font,color,type='texto'){
+ addLayer(
+   textImage(text,font,color),
+   text||'Texto',
+   type,
+   {textValue:text||'Texto',fontValue:font||'Impact',textColor:color||'#111111'}
+ );
+}
+function addLayer(data,name,type,extra={}){
+ const im=new Image();im.onload=()=>{
+   const aspect=im.width/im.height;
+   layers.push({id:seq++,data,name,type,aspect,x:50,y:47,w:Math.min(36,Math.max(18,22*aspect)),rot:0,face:currentFace,...extra});
+   selectedId=layers[layers.length-1].id;
+   renderLayers();saveState();
+   notify('Diseño agregado en '+faceName(currentFace).toLowerCase()+'. Arrástralo con el dedo o Apple Pencil.');
+   setTool('layers')
+ };
+ im.src=data;
+}
+function recolorTemplateLayer(layer,color){
+ if(!layer||layer.type!=='plantilla')return;
+ const oldData=layer.data;
+ layer.textColor=color;
+ layer.textValue=layer.textValue||layer.name||'ONLY UNBROKEN';
+ layer.fontValue=layer.fontValue||'Impact';
+ layer.data=textImage(layer.textValue,layer.fontValue,color);
+ layerImgCache.delete(oldData);
+ renderLayers();
+ saveState();
+ if(activeTool==='layers')renderPanel();
+ notify('Color de plantilla actualizado');
 }
 function selected(){return layers.find(l=>l.id===selectedId)||null}
 function renderLayers(){
@@ -1060,7 +1107,7 @@ function snapshotState(){
    currentFace,
    yaw3d,
    editorZoom,
-   layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face})=>({id,data,name,type,aspect,x,y,w,rot,face})),
+   layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face,textValue,fontValue,textColor})=>({id,data,name,type,aspect,x,y,w,rot,face,textValue,fontValue,textColor})),
    library,
    showGrid,
    backgroundMode,

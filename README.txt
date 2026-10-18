@@ -1,11 +1,11 @@
-ONLY UNBROKEN · STUDIO V19
+ONLY UNBROKEN · STUDIO V20
 
-FIXES
-- No se cambió el diseño del Inicio, editor, hoodie, playera ni proyectos.
-- Se bloqueó el zoom accidental del navegador en iPad/Safari dentro del mockup.
-- El zoom propio del editor sigue disponible con + / - y con pellizco sobre espacio vacío.
-- Pellizcar encima de un diseño ya no debería agrandar accidentalmente todo el mockup.
-- Autosave mientras mueves, escalas o giras diseños.
-- Guardado de seguridad cada 4 segundos.
-- Guarda al ocultar o cerrar la pestaña.
-- Copia adicional de proyectos en IndexedDB, además de localStorage.
+CAMBIO V20
+- No se cambió el inicio, proyectos, prendas, hoodie, playera, zoom ni autosave.
+- Las Plantillas ahora tienen selector de color antes de agregarlas.
+- Incluye colores rápidos y selector libre.
+- Una plantilla ya agregada puede cambiar de color desde Capas sin borrarla ni volverla a crear.
+- Cambiar el color conserva posición, tamaño, rotación y vista de la plantilla.
+- El color y los datos de la plantilla se guardan con el proyecto.
+
+Mantiene todas las mejoras de V19.
