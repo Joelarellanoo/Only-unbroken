@@ -33,3 +33,9 @@ tee_back.png
 tee_left.png
 tee_right.png
 README.txt
+
+
+V16 PLAYERA MOCKUP UPDATE
+- Solo se reemplazaron tee_front.png, tee_back.png, tee_left.png y tee_right.png.
+- No se modificó index.html ni ninguna función del editor.
+- La playera nueva usa el mockup realista generado en las cuatro vistas.
