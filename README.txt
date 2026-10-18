@@ -39,3 +39,8 @@ V16 PLAYERA MOCKUP UPDATE
 - Solo se reemplazaron tee_front.png, tee_back.png, tee_left.png y tee_right.png.
 - No se modificó index.html ni ninguna función del editor.
 - La playera nueva usa el mockup realista generado en las cuatro vistas.
+
+
+V17 CACHE FIX
+- No se cambió el diseño, menú, proyectos ni funciones.
+- Solo se forzó al navegador a volver a cargar las 4 imágenes realistas de la playera.
