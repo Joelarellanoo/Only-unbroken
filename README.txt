@@ -44,3 +44,8 @@ V16 PLAYERA MOCKUP UPDATE
 V17 CACHE FIX
 - No se cambió el diseño, menú, proyectos ni funciones.
 - Solo se forzó al navegador a volver a cargar las 4 imágenes realistas de la playera.
+
+
+V18 ASSET PATH FIX
+- No se modificaron funciones, menú, proyectos, hoodie ni diseño del editor.
+- La playera realista ahora usa nombres de archivo completamente nuevos para evitar caché de GitHub Pages/Safari.
