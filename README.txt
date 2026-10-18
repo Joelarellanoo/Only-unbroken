@@ -1,11 +1,10 @@
-ONLY UNBROKEN · STUDIO V20
+ONLY UNBROKEN · STUDIO V21
 
-CAMBIO V20
-- No se cambió el inicio, proyectos, prendas, hoodie, playera, zoom ni autosave.
-- Las Plantillas ahora tienen selector de color antes de agregarlas.
-- Incluye colores rápidos y selector libre.
-- Una plantilla ya agregada puede cambiar de color desde Capas sin borrarla ni volverla a crear.
-- Cambiar el color conserva posición, tamaño, rotación y vista de la plantilla.
-- El color y los datos de la plantilla se guardan con el proyecto.
-
-Mantiene todas las mejoras de V19.
+ARREGLO DE GUARDADO
+- No se cambió el diseño del Inicio, editor, hoodie, playera, plantillas ni controles.
+- Corrige el problema donde al refrescar podía reaparecer una copia vieja o vacía del proyecto.
+- La página ahora compara localStorage e IndexedDB y abre siempre la copia más reciente.
+- Los guardados de IndexedDB se hacen en orden para que un guardado viejo no pueda pisar uno nuevo.
+- Autosave más rápido durante la edición.
+- Guardado de seguridad cada 2 segundos y al ocultar/cerrar/refrescar la página.
+- Mantiene todos los arreglos de zoom y colores de V19/V20.

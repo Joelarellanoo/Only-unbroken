@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#090d1d">
-<title>ONLY UNBROKEN · Studio V20</title>
+<title>ONLY UNBROKEN · Studio V21</title>
 <style>
 :root{
   --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
@@ -454,6 +454,7 @@ const faceBaseCache=new Map();
 const RENDER_W=1060, RENDER_H=1380;
 
 const projectsKey='only_unbroken_projects_v14';
+const projectsMetaKey='only_unbroken_projects_v21_meta';
 const legacyStateKey='only_unbroken_turntable_v11';
 const studioDBName='only_unbroken_studio_v19';
 const studioDBStore='autosave';
@@ -461,6 +462,18 @@ let projects=[];
 let currentProjectId=null;
 let autosaveTimer=null;
 let templateColor='#111111';
+let pendingIDBSave=null;
+let idbSaving=false;
+
+function projectFreshness(list){
+ if(!Array.isArray(list)||!list.length)return 0;
+ return list.reduce((m,p)=>Math.max(m,Number(p?.updatedAt)||0),0);
+}
+
+function readLocalSavedAt(){
+ const meta=Number(localStorage.getItem(projectsMetaKey)||0);
+ return meta||projectFreshness(projects);
+}
 
 function openStudioDB(){
  return new Promise((resolve,reject)=>{
@@ -475,37 +488,66 @@ function openStudioDB(){
  });
 }
 
-async function persistProjectsIDB(){
+async function writeIDBEnvelope(envelope){
+ const db=await openStudioDB();
+ if(!db)return;
+ await new Promise((resolve,reject)=>{
+   const tx=db.transaction(studioDBStore,'readwrite');
+   tx.objectStore(studioDBStore).put(envelope,'projects');
+   tx.oncomplete=()=>resolve();
+   tx.onerror=()=>reject(tx.error);
+   tx.onabort=()=>reject(tx.error);
+ });
+ db.close();
+}
+
+async function drainIDBSaves(){
+ if(idbSaving)return;
+ idbSaving=true;
  try{
-   const db=await openStudioDB();
-   if(!db)return;
-   await new Promise((resolve,reject)=>{
-     const tx=db.transaction(studioDBStore,'readwrite');
-     tx.objectStore(studioDBStore).put(projects,'projects');
-     tx.oncomplete=resolve;
-     tx.onerror=()=>reject(tx.error);
-     tx.onabort=()=>reject(tx.error);
-   });
-   db.close();
- }catch(e){}
+   while(pendingIDBSave){
+     const envelope=pendingIDBSave;
+     pendingIDBSave=null;
+     try{await writeIDBEnvelope(envelope)}catch(e){}
+   }
+ }finally{
+   idbSaving=false;
+ }
+}
+
+function persistProjectsIDB(savedAt=Date.now()){
+ let copy;
+ try{copy=JSON.parse(JSON.stringify(projects))}catch(e){copy=projects}
+ pendingIDBSave={savedAt,projects:copy};
+ drainIDBSaves();
 }
 
 async function loadProjectsIDB(){
  try{
    const db=await openStudioDB();
-   if(!db)return null;
-   const result=await new Promise((resolve,reject)=>{
+   if(!db)return {savedAt:0,projects:[]};
+   const raw=await new Promise((resolve,reject)=>{
      const tx=db.transaction(studioDBStore,'readonly');
      const req=tx.objectStore(studioDBStore).get('projects');
      req.onsuccess=()=>resolve(req.result||null);
      req.onerror=()=>reject(req.error);
    });
    db.close();
-   return result;
- }catch(e){return null}
+
+   // V19/V20 stored a plain array. V21 stores {savedAt, projects}.
+   if(Array.isArray(raw)){
+     return {savedAt:projectFreshness(raw),projects:raw};
+   }
+   if(raw&&Array.isArray(raw.projects)){
+     return {savedAt:Number(raw.savedAt)||projectFreshness(raw.projects),projects:raw.projects};
+   }
+   return {savedAt:0,projects:[]};
+ }catch(e){
+   return {savedAt:0,projects:[]};
+ }
 }
 
-function queueAutosave(delay=450){
+function queueAutosave(delay=300){
  if(!currentProjectId)return;
  clearTimeout(autosaveTimer);
  autosaveTimer=setTimeout(()=>saveState(),delay);
@@ -1146,12 +1188,16 @@ function applyProjectState(state){
 }
 
 function persistProjects(){
+ const savedAt=Date.now();
  let localOk=true;
- try{localStorage.setItem(projectsKey,JSON.stringify(projects))}catch(e){
+ try{
+   localStorage.setItem(projectsKey,JSON.stringify(projects));
+   localStorage.setItem(projectsMetaKey,String(savedAt));
+ }catch(e){
    localOk=false;
  }
- persistProjectsIDB();
- if(!localOk)notify('Guardado seguro activado. El navegador se quedó corto de espacio local.');
+ persistProjectsIDB(savedAt);
+ if(!localOk)notify('Guardado seguro activado. El proyecto se guardará en el almacenamiento grande del navegador.');
 }
 
 function saveState(){
@@ -1169,12 +1215,13 @@ function flushAutosave(){
  clearTimeout(autosaveTimer);
  if(currentProjectId)saveState();
 }
-window.addEventListener('pagehide',flushAutosave);
-window.addEventListener('beforeunload',flushAutosave);
+window.addEventListener('pagehide',flushAutosave,{capture:true});
+window.addEventListener('beforeunload',flushAutosave,{capture:true});
 document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState==='hidden')flushAutosave();
 });
 window.addEventListener('blur',()=>queueAutosave(0));
+window.addEventListener('freeze',flushAutosave);
 
 function migrateLegacyProject(){
  try{
@@ -1327,17 +1374,25 @@ document.querySelectorAll('[data-create-product]').forEach(b=>b.onclick=()=>crea
 
 async function bootStudio(){
  loadProjects();
- const idbProjects=await loadProjectsIDB();
- if(Array.isArray(idbProjects)&&idbProjects.length){
-   projects=idbProjects;
-   try{localStorage.setItem(projectsKey,JSON.stringify(projects))}catch(e){}
- }else if(projects.length){
-   persistProjectsIDB();
+
+ const localProjects=projects;
+ const localSavedAt=readLocalSavedAt();
+ const idb=await loadProjectsIDB();
+
+ if(Array.isArray(idb.projects)&&idb.projects.length && idb.savedAt>localSavedAt){
+   projects=idb.projects;
+ }else{
+   projects=localProjects;
  }
+
+ // Normalize both copies after selecting the freshest one.
+ if(projects.length)persistProjects();
  showDashboard();
 }
 bootStudio();
-setInterval(()=>{if(currentProjectId)saveState()},4000);
+
+// Safety save while editing. Normal edits also autosave immediately.
+setInterval(()=>{if(currentProjectId)saveState()},2000);
 
 </script>
 </body>
