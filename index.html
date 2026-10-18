@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#090d1d">
-<title>ONLY UNBROKEN · Studio V25</title>
+<title>ONLY UNBROKEN · Studio V21</title>
 <style>
 :root{
   --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
@@ -277,12 +277,6 @@ body.menuOpen .headActions{visibility:hidden}
 /* V19 stability fixes only */
 html,body{overscroll-behavior:none}
 #artboard{touch-action:none}
-
-.texturePreview{width:100%;aspect-ratio:1.25/1;border-radius:12px;background:#eef0f4;object-fit:cover;border:1px solid #d7dbe5}
-.textureChoice{display:flex;flex-direction:column;gap:7px;align-items:stretch;text-align:left}
-.textureChoice strong{font-size:10px}
-.textureChoice span{font-size:9px;color:#8996bd}
-.editHint{font-size:9px;color:#8290b8;margin-top:5px}
 </style>
 </head>
 <body>
@@ -355,7 +349,6 @@ html,body{overscroll-behavior:none}
     <button class="tool" data-tool="colors"><span>Colores</span></button>
     <button class="tool" data-tool="text"><span>Textos</span></button>
     <button class="tool" data-tool="images"><span>Imágenes</span></button>
-    <button class="tool" data-tool="textures"><span>Texturas</span></button>
     <button class="tool" data-tool="pencil"><span>Apple Pencil</span></button>
     <button class="tool" data-tool="layers"><span>Capas</span></button>
     <div class="spacer"></div>
@@ -410,19 +403,6 @@ html,body{overscroll-behavior:none}
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-function escapeAttr(v){
- return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-}
-const templateFonts=['Impact','Arial Black','Trebuchet MS','Georgia','Courier New','Times New Roman'];
-function fontOptions(current){
- return templateFonts.map(f=>`<option ${f===current?'selected':''}>${f}</option>`).join('');
-}
-const textureKinds=[
- {id:'distressed',name:'Desgastado',desc:'raspones y puntos'},
- {id:'grunge',name:'Grunge',desc:'manchas irregulares'},
- {id:'cracks',name:'Vintage cracks',desc:'grietas finas'},
- {id:'washed',name:'Lavado',desc:'desgaste suave'}
-];
 const panel=$('#panel'), designArea=$('#designArea'), artboard=$('#artboard'), garmentWrap=$('#garmentWrap'), garmentCanvas=$('#garmentCanvas'), garmentCtx=garmentCanvas.getContext('2d');
 const local3d=$('#local3d'), local3dScene=$('#local3dScene'), hoodieCube=$('#hoodieCube');
 const dashboard=$('#dashboard'), workspace=$('#workspace'), projectsGrid=$('#projectsGrid');
@@ -470,6 +450,7 @@ const faceAngles={front:0,right:-90,back:-180,left:-270};
 const faceOrder=['front','right','back','left'];
 const faceCanvas3D={front:$('#face3d-front'),back:$('#face3d-back'),left:$('#face3d-left'),right:$('#face3d-right')};
 const layerImgCache=new Map();
+const layerPreviewCache=new Map();
 const faceBaseCache=new Map();
 const RENDER_W=1060, RENDER_H=1380;
 
@@ -482,9 +463,6 @@ let projects=[];
 let currentProjectId=null;
 let autosaveTimer=null;
 let templateColor='#111111';
-let textureColor='#e7e7e7';
-let textureOpacity=.42;
-const textureImgCache=new Map();
 let pendingIDBSave=null;
 let idbSaving=false;
 
@@ -658,15 +636,7 @@ function tintGarmentToCanvas(face,targetCanvas){
    const x=l.x/100*W;
    const y=l.y/100*H;
 
-   tx.save();
-   tx.imageSmoothingEnabled=true;
-   tx.imageSmoothingQuality='high';
-   tx.translate(x,y);
-   tx.rotate((l.rot||0)*Math.PI/180);
-   tx.globalAlpha=l.opacity??1;
-   tx.drawImage(im,-w/2,-h/2,w,h);
-   tx.globalAlpha=1;
-   tx.restore();
+   drawLayerToContext(tx,l,im,x,y,w,h);
  });
 }
 
@@ -800,7 +770,7 @@ function renderPanel(){
    <div class="card"><div class="cardTitle">Tus archivos</div><div class="libraryGrid" id="libraryGrid">${libraryHTML()}</div></div>`;
  } else if(activeTab==='templates'){
    const tsw=['#111111','#ffffff','#e6dfcf','#8f93a3','#314c7a','#6e4b58','#4c624f','#7a5c86'];
-   h=`<h2>Plantillas</h2><p>Elige una plantilla y después cambia su texto, tipografía, espaciado y color desde Capas.</p>
+   h=`<h2>Plantillas</h2><p>Elige el color y luego toca una plantilla. Después también puedes cambiarle el color desde Capas.</p>
    <div class="card"><div class="cardTitle">Color de la plantilla</div>
    <input id="templateColor" type="color" value="${templateColor}">
    <div class="swatches" style="margin-top:10px">${tsw.map(c=>`<button class="swatch ${c===templateColor?'active':''}" data-template-color="${c}" style="background:${c}"></button>`).join('')}</div>
@@ -833,20 +803,8 @@ function renderPanel(){
    <div style="max-width:64px"><label>Color</label><input id="textColor" type="color" value="#111111"></div></div>
    <button class="btn primary wide" id="addText" style="margin-top:10px">Agregar texto</button></div>`;
  } else if(activeTool==='images'){
-   h=`<h2>Imágenes</h2><p>Sube PNG, JPG o WEBP. Después podrás moverla, cambiar su opacidad y hacerla más visible sobre prendas oscuras.</p>
+   h=`<h2>Imágenes</h2><p>Sube PNG, JPG o WEBP. Después arrástralo sobre el mockup.</p>
    <div class="card"><div class="uploadBox">Selecciona tu diseño<br><br><input id="imgUpload" type="file" accept="image/png,image/jpeg,image/webp"></div></div>`;
- } else if(activeTool==='textures'){
-   h=`<h2>Texturas</h2><p>Agrega desgaste, grunge o lavado encima de la prenda. También aparece en Modelo 3D.</p>
-   <div class="card"><div class="cardTitle">Apariencia</div>
-   <div class="row"><div><label>Color</label><input id="textureColor" type="color" value="${textureColor}"></div>
-   <div><label>Opacidad · <span id="textureOpacityValue">${Math.round(textureOpacity*100)}%</span></label><input id="textureOpacity" type="range" min="10" max="90" value="${Math.round(textureOpacity*100)}"></div></div>
-   </div>
-   <div class="card"><div class="cardTitle">Desgastes</div><div class="templateGrid">
-   ${textureKinds.map(t=>`<button class="template textureChoice" data-texture="${t.id}">
-      <img class="texturePreview" src="${textureImage(t.id,textureColor)}">
-      <strong>${t.name}</strong><span>${t.desc}</span>
-   </button>`).join('')}
-   </div><div class="editHint">Después puedes mover, escalar, rotar, recolorear y cambiar la opacidad desde Capas.</div></div>`;
  } else if(activeTool==='pencil'){
    h=`<h2>Apple Pencil</h2><p>Dibuja, luego inserta el dibujo sobre la prenda.</p>
    <div class="card"><canvas id="pencilCanvas" class="pencilPad" width="1600" height="1200"></canvas>
@@ -855,27 +813,14 @@ function renderPanel(){
  } else if(activeTool==='layers'){
    h=`<h2>Capas</h2><p>Aquí aparecen los diseños de todas las vistas. Toca uno para ir directo a él y editarlo.</p><div class="card">${layersHTML()}</div>
    ${selected()?`<div class="card"><div class="cardTitle">Seleccionado · ${faceName(selected().face||'front')}</div>
-   ${selected().type==='plantilla'?`<label>Texto de la plantilla</label>
-   <input id="selectedTemplateText" type="text" maxlength="60" value="${escapeAttr(selected().textValue||selected().name||'ONLY UNBROKEN')}">
-   <div class="row"><div><label>Tipografía</label><select id="selectedTemplateFont">${fontOptions(selected().fontValue||'Impact')}</select></div>
-   <div><label>Espaciado</label><input id="selectedTemplateSpacing" type="range" min="-4" max="30" value="${selected().letterSpacing||0}"></div></div>
-   <label>Color de la plantilla</label>
+   ${selected().type==='plantilla'?`<label>Color de la plantilla</label>
    <input id="selectedTemplateColor" type="color" value="${selected().textColor||'#111111'}">
-   <div class="swatches" style="margin:8px 0 10px">${['#111111','#ffffff','#e6dfcf','#8f93a3','#314c7a','#6e4b58','#4c624f','#7a5c86'].map(c=>`<button class="swatch ${c===(selected().textColor||'#111111')?'active':''}" data-selected-template-color="${c}" style="background:${c}"></button>`).join('')}</div>
-   <button class="btn primary wide" id="applyTemplateEdit">Aplicar cambios de letras</button>
-   <div class="editHint">Conserva su posición, tamaño, rotación y vista.</div>`:''}
-   ${selected().type==='textura'?`<label>Color de la textura</label>
-   <input id="selectedTextureColor" type="color" value="${selected().textureColor||'#e7e7e7'}">
-   <label>Opacidad · <span id="selectedTextureOpacityValue">${Math.round((selected().opacity??.42)*100)}%</span></label>
-   <input id="selectedTextureOpacity" type="range" min="5" max="95" value="${Math.round((selected().opacity??.42)*100)}">`:''}
-   ${selected().type==='imagen'?`<label>Opacidad de la imagen · <span id="selectedImageOpacityValue">${Math.round((selected().opacity??1)*100)}%</span></label>
-   <input id="selectedImageOpacity" type="range" min="5" max="100" value="${Math.round((selected().opacity??1)*100)}">
-   <div class="row"><div><label>Modo</label><select id="selectedImageMode"><option value="original" ${(selected().imageMode||'original')==='original'?'selected':''}>Original</option><option value="tint" ${(selected().imageMode||'original')==='tint'?'selected':''}>Tinta sólida</option></select></div>
-   <div><label>Color fuerte</label><input id="selectedImageTint" type="color" value="${selected().imageTintColor||'#ffffff'}"></div></div>
-   <label>Fuerza · <span id="selectedImageBoostValue">${selected().imageBoost||100}%</span></label>
-   <input id="selectedImageBoost" type="range" min="60" max="200" value="${selected().imageBoost||100}">
-   <div class="row" style="margin-top:8px"><button class="btn" id="applyImageStyle">Aplicar</button><button class="btn primary" id="makeImageVisibleDark">Visible en negro</button></div>
-   <div class="editHint">“Tinta sólida” recolorea el diseño usando su transparencia, ideal para logos negros sobre prendas negras.</div>`:''}
+   <div class="swatches" style="margin:8px 0 10px">${['#111111','#ffffff','#e6dfcf','#8f93a3','#314c7a','#6e4b58','#4c624f','#7a5c86'].map(c=>`<button class="swatch ${c===(selected().textColor||'#111111')?'active':''}" data-selected-template-color="${c}" style="background:${c}"></button>`).join('')}</div>`:''}
+   ${selected().type==='imagen'?`<label>Opacidad</label><input id="layerOpacity" type="range" min="5" max="100" value="${Math.round((selected().opacity??1)*100)}">
+   <label>Intensidad / visibilidad</label><input id="layerIntensity" type="range" min="60" max="260" value="${Math.round((selected().intensity??1)*100)}">
+   <label>Color sólido para que resalte</label><input id="selectedImageTint" type="color" value="${selected().tintColor||'#ffffff'}">
+   <div class="row" style="margin-top:8px"><button class="btn ${selected().forceColor?'primary':''}" id="toggleImageTint">${selected().forceColor?'Quitar color sólido':'Usar color sólido'}</button><button class="btn" id="resetImageAdjust">Restablecer imagen</button></div>
+   <div class="smallMuted" style="text-align:left;margin:8px 0 4px">Tip: si tu diseño es negro y la prenda también, activa “Usar color sólido” y elige blanco.</div>`:''}
    <label>Tamaño</label><input id="layerSize" type="range" min="8" max="80" value="${selected().w}">
    <label>Rotación</label><input id="layerRot" type="range" min="-180" max="180" value="${selected().rot}">
    <label>Mover este diseño a otra vista</label>
@@ -901,10 +846,7 @@ function bindPanel(){
    const back=$('#backToStudio');
    if(back)back.onclick=()=>showDashboard();
  }
- if(activeTab==='library') panel.querySelectorAll('[data-lib]').forEach(b=>{
-   const item=library[+b.dataset.lib];
-   addLayer(item.data,item.name,'imagen',{originalData:item.data,opacity:1,imageMode:'original',imageTintColor:'#ffffff',imageBoost:100});
- });
+ if(activeTab==='library') panel.querySelectorAll('[data-lib]').forEach(b=>b.onclick=()=>addLayer(library[+b.dataset.lib].data,library[+b.dataset.lib].name,'imagen'));
  if(activeTab==='templates'){
    const tc=$('#templateColor');
    if(tc)tc.oninput=e=>{templateColor=e.target.value;renderPanel()};
@@ -921,22 +863,7 @@ function bindPanel(){
    panel.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{garmentColor=b.dataset.color;faceBaseCache.clear();renderGarment();renderAll3D();saveState();renderPanel()});
  }
  if(activeTool==='text'&&activeTab==='design') $('#addText').onclick=()=>addTextLayer($('#textValue').value,$('#fontValue').value,$('#textColor').value);
- if(activeTool==='images'&&activeTab==='design') $('#imgUpload').onchange=e=>{
-   const f=e.target.files[0];if(!f)return;
-   const r=new FileReader();
-   r.onload=()=>{
-     library.push({name:f.name,data:r.result});
-     addLayer(r.result,f.name,'imagen',{originalData:r.result,opacity:1,imageMode:'original',imageTintColor:'#ffffff',imageBoost:100});
-     saveState();
-   };
-   r.readAsDataURL(f)
- };
- if(activeTool==='textures'&&activeTab==='design'){
-   const tc=$('#textureColor'),to=$('#textureOpacity'),tv=$('#textureOpacityValue');
-   if(tc)tc.oninput=e=>{textureColor=e.target.value;renderPanel()};
-   if(to)to.oninput=e=>{textureOpacity=+e.target.value/100;if(tv)tv.textContent=e.target.value+'%'};
-   panel.querySelectorAll('[data-texture]').forEach(b=>b.onclick=()=>addTextureLayer(b.dataset.texture,textureColor,textureOpacity));
- }
+ if(activeTool==='images'&&activeTab==='design') $('#imgUpload').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{library.push({name:f.name,data:r.result});addLayer(r.result,f.name,'imagen');saveState()};r.readAsDataURL(f)};
  if(activeTool==='pencil'&&activeTab==='design') setupPencil();
  if(activeTool==='layers'&&activeTab==='design'){
    panel.querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{
@@ -952,59 +879,21 @@ function bindPanel(){
    if(selected()){
      if(selected().type==='plantilla'){
        const sc=$('#selectedTemplateColor');
-       if(sc)sc.oninput=e=>{sc.value=e.target.value};
-       panel.querySelectorAll('[data-selected-template-color]').forEach(b=>b.onclick=()=>{
-         const c=b.dataset.selectedTemplateColor;
-         if(sc)sc.value=c;
-         updateTemplateLayer(selected(),{
-           text:$('#selectedTemplateText')?.value,
-           font:$('#selectedTemplateFont')?.value,
-           color:c,
-           spacing:+($('#selectedTemplateSpacing')?.value||0)
-         });
-       });
-       const apply=$('#applyTemplateEdit');
-       if(apply)apply.onclick=()=>updateTemplateLayer(selected(),{
-         text:$('#selectedTemplateText')?.value,
-         font:$('#selectedTemplateFont')?.value,
-         color:$('#selectedTemplateColor')?.value,
-         spacing:+($('#selectedTemplateSpacing')?.value||0)
-       });
-     }
-     if(selected().type==='textura'){
-       const tc=$('#selectedTextureColor'),to=$('#selectedTextureOpacity'),tv=$('#selectedTextureOpacityValue');
-       if(tc)tc.oninput=e=>recolorTextureLayer(selected(),e.target.value);
-       if(to)to.oninput=e=>{
-         const l=selected(); if(!l)return;
-         l.opacity=+e.target.value/100;
-         if(tv)tv.textContent=e.target.value+'%';
-         renderLayers(); saveState();
-       };
+       if(sc)sc.oninput=e=>recolorTemplateLayer(selected(),e.target.value);
+       panel.querySelectorAll('[data-selected-template-color]').forEach(b=>b.onclick=()=>recolorTemplateLayer(selected(),b.dataset.selectedTemplateColor));
      }
      if(selected().type==='imagen'){
-       const io=$('#selectedImageOpacity'),iov=$('#selectedImageOpacityValue');
-       const mode=$('#selectedImageMode'),tint=$('#selectedImageTint');
-       const boost=$('#selectedImageBoost'),boostV=$('#selectedImageBoostValue');
-       if(io)io.oninput=e=>{
-         const l=selected(); if(!l)return;
-         l.opacity=+e.target.value/100;
-         if(iov)iov.textContent=e.target.value+'%';
-         renderLayers();saveState();
-       };
-       if(boost)boost.oninput=e=>{if(boostV)boostV.textContent=e.target.value+'%'};
-       const apply=()=>{
-         const l=selected();if(!l)return;
-         styleImageLayer(l,mode?.value||'original',tint?.value||'#ffffff',+(boost?.value||100));
-       };
-       const ap=$('#applyImageStyle'); if(ap)ap.onclick=apply;
-       const dark=$('#makeImageVisibleDark');
-       if(dark)dark.onclick=()=>{
-         if(mode)mode.value='tint';
-         if(tint)tint.value='#ffffff';
-         if(boost)boost.value='160';
-         if(boostV)boostV.textContent='160%';
-         apply();
-       };
+       const syncImageAdjust=()=>{layerPreviewCache.clear();renderLayers();if(activeTool==='layers')renderPanel();saveState()};
+       const op=$('#layerOpacity');
+       if(op)op.oninput=e=>{selected().opacity=Math.max(.05,Math.min(1,(+e.target.value||100)/100));syncImageAdjust()};
+       const it=$('#layerIntensity');
+       if(it)it.oninput=e=>{selected().intensity=Math.max(.6,Math.min(2.6,(+e.target.value||100)/100));syncImageAdjust()};
+       const tint=$('#selectedImageTint');
+       if(tint)tint.oninput=e=>{selected().tintColor=e.target.value;syncImageAdjust()};
+       const toggleTint=$('#toggleImageTint');
+       if(toggleTint)toggleTint.onclick=()=>{selected().forceColor=!selected().forceColor;syncImageAdjust()};
+       const resetImg=$('#resetImageAdjust');
+       if(resetImg)resetImg.onclick=()=>{Object.assign(selected(),{opacity:1,intensity:1,tintColor:'#ffffff',forceColor:false});syncImageAdjust()};
      }
      $('#layerSize').oninput=e=>{selected().w=+e.target.value;syncLayer(selected());saveState()};
      $('#layerRot').oninput=e=>{selected().rot=+e.target.value;syncLayer(selected());saveState()};
@@ -1015,43 +904,27 @@ function bindPanel(){
    }
  }
 }
-function textImage(text,font,color,letterSpacing=0){
+function textImage(text,font,color){
  const c=document.createElement('canvas');c.width=2400;c.height=720;const x=c.getContext('2d');
  x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
- x.clearRect(0,0,c.width,c.height);x.fillStyle=color;x.textAlign='left';x.textBaseline='middle';
- const value=(text||'ONLY UNBROKEN').slice(0,60);
- let size=300;
- const widthFor=()=>{
-   x.font=`900 ${size}px "${font}"`;
-   const chars=[...value];
-   return chars.reduce((sum,ch)=>sum+x.measureText(ch).width,0)+Math.max(0,chars.length-1)*letterSpacing*3;
- };
- while(widthFor()>2160&&size>90)size-=10;
- x.font=`900 ${size}px "${font}"`;
- const chars=[...value];
- const gap=letterSpacing*3;
- const widths=chars.map(ch=>x.measureText(ch).width);
- const total=widths.reduce((a,b)=>a+b,0)+Math.max(0,chars.length-1)*gap;
- let px=(c.width-total)/2;
- chars.forEach((ch,i)=>{x.fillText(ch,px,360);px+=widths[i]+gap});
+ x.clearRect(0,0,c.width,c.height);x.fillStyle=color;x.textAlign='center';x.textBaseline='middle';
+ let size=300;x.font=`900 ${size}px "${font}"`;while(x.measureText(text).width>2160&&size>90){size-=10;x.font=`900 ${size}px "${font}"`}
+ x.fillText(text||'ONLY UNBROKEN',1200,360);
  return c.toDataURL('image/png');
 }
-
 function addTextLayer(text,font,color,type='texto'){
  addLayer(
-   textImage(text,font,color,0),
+   textImage(text,font,color),
    text||'Texto',
    type,
-   {textValue:text||'Texto',fontValue:font||'Impact',textColor:color||'#111111',letterSpacing:0}
+   {textValue:text||'Texto',fontValue:font||'Impact',textColor:color||'#111111'}
  );
 }
-
 function addLayer(data,name,type,extra={}){
  const im=new Image();im.onload=()=>{
+   layerImgCache.set(data,im);
    const aspect=im.width/im.height;
-   const initialW=extra.initialW??Math.min(36,Math.max(18,22*aspect));
-   const clean={...extra};delete clean.initialW;
-   layers.push({id:seq++,data,name,type,aspect,x:50,y:47,w:initialW,rot:0,face:currentFace,...clean});
+   layers.push({id:seq++,data,name,type,aspect,x:50,y:47,w:Math.min(36,Math.max(18,22*aspect)),rot:0,face:currentFace,opacity:1,intensity:1,forceColor:false,tintColor:'#ffffff',...extra});
    selectedId=layers[layers.length-1].id;
    renderLayers();saveState();
    notify('Diseño agregado en '+faceName(currentFace).toLowerCase()+'. Arrástralo con el dedo o Apple Pencil.');
@@ -1059,187 +932,85 @@ function addLayer(data,name,type,extra={}){
  };
  im.src=data;
 }
-
-function updateTemplateLayer(layer,{text,font,color,spacing}={}){
+function recolorTemplateLayer(layer,color){
  if(!layer||layer.type!=='plantilla')return;
  const oldData=layer.data;
- layer.textValue=(text??layer.textValue??layer.name??'ONLY UNBROKEN').trim()||'ONLY UNBROKEN';
- layer.fontValue=font||layer.fontValue||'Impact';
- layer.textColor=color||layer.textColor||'#111111';
- layer.letterSpacing=Number.isFinite(spacing)?spacing:(layer.letterSpacing||0);
- layer.name=layer.textValue;
- layer.data=textImage(layer.textValue,layer.fontValue,layer.textColor,layer.letterSpacing);
+ layer.textColor=color;
+ layer.textValue=layer.textValue||layer.name||'ONLY UNBROKEN';
+ layer.fontValue=layer.fontValue||'Impact';
+ layer.data=textImage(layer.textValue,layer.fontValue,color);
  layerImgCache.delete(oldData);
- const im=new Image();
- im.onload=()=>{
-   layer.aspect=im.width/im.height;
-   renderLayers();saveState();renderPanel();
-   notify('Letras de la plantilla actualizadas');
- };
- im.src=layer.data;
+ renderLayers();
+ saveState();
+ if(activeTool==='layers')renderPanel();
+ notify('Color de plantilla actualizado');
 }
-
-function recolorTemplateLayer(layer,color){
- updateTemplateLayer(layer,{
-   text:layer?.textValue,
-   font:layer?.fontValue,
-   color,
-   spacing:layer?.letterSpacing||0
- });
-}
-
-function seededTextureRandom(seedText){
- let h=2166136261;
- for(let i=0;i<seedText.length;i++){h^=seedText.charCodeAt(i);h=Math.imul(h,16777619)}
- return ()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};
-}
-
-function textureImage(kind,color){
- const key=kind+':'+color;
- if(textureImgCache.has(key))return textureImgCache.get(key);
- const c=document.createElement('canvas');c.width=1000;c.height=1000;const x=c.getContext('2d');
- const rnd=seededTextureRandom(kind+'-only-unbroken');
- x.clearRect(0,0,c.width,c.height);
- x.fillStyle=color;x.strokeStyle=color;x.lineCap='round';
-
- if(kind==='distressed'){
-   for(let i=0;i<520;i++){
-     x.globalAlpha=.12+rnd()*.48;
-     const px=rnd()*1000,py=rnd()*1000,rx=1+rnd()*12,ry=1+rnd()*4;
-     x.beginPath();x.ellipse(px,py,rx,ry,rnd()*Math.PI,0,Math.PI*2);x.fill();
-   }
-   for(let i=0;i<48;i++){
-     x.globalAlpha=.13+rnd()*.35;x.lineWidth=1+rnd()*5;
-     const px=rnd()*900,py=rnd()*1000,len=25+rnd()*160;
-     x.beginPath();x.moveTo(px,py);x.lineTo(px+len,py+(rnd()-.5)*22);x.stroke();
-   }
- }else if(kind==='grunge'){
-   for(let i=0;i<145;i++){
-     x.globalAlpha=.08+rnd()*.35;
-     const px=rnd()*1000,py=rnd()*1000,rad=8+rnd()*55;
-     x.beginPath();
-     const pts=8+Math.floor(rnd()*8);
-     for(let j=0;j<pts;j++){
-       const a=j/pts*Math.PI*2,r=rad*(.45+rnd()*.8);
-       const xx=px+Math.cos(a)*r,yy=py+Math.sin(a)*r;
-       if(j===0)x.moveTo(xx,yy);else x.lineTo(xx,yy);
-     }
-     x.closePath();x.fill();
-   }
-   for(let i=0;i<350;i++){
-     x.globalAlpha=.1+rnd()*.3;
-     const r=.5+rnd()*4;x.beginPath();x.arc(rnd()*1000,rnd()*1000,r,0,Math.PI*2);x.fill();
-   }
- }else if(kind==='cracks'){
-   x.globalAlpha=.28;
-   for(let i=0;i<48;i++){
-     let px=rnd()*1000,py=rnd()*1000;
-     const branches=2+Math.floor(rnd()*4);
-     for(let b=0;b<branches;b++){
-       x.beginPath();x.moveTo(px,py);x.lineWidth=.7+rnd()*2;
-       let cx=px,cy=py;
-       const steps=4+Math.floor(rnd()*7);
-       for(let s=0;s<steps;s++){cx+=(rnd()-.5)*70;cy+=(rnd()-.5)*70;x.lineTo(cx,cy)}
-       x.stroke();
-     }
-   }
- }else{
-   for(let i=0;i<75;i++){
-     x.globalAlpha=.025+rnd()*.08;
-     const px=rnd()*1000,py=rnd()*1000,rx=30+rnd()*130,ry=20+rnd()*95;
-     x.beginPath();x.ellipse(px,py,rx,ry,rnd()*Math.PI,0,Math.PI*2);x.fill();
-   }
-   for(let i=0;i<240;i++){
-     x.globalAlpha=.035+rnd()*.08;
-     const r=2+rnd()*10;x.beginPath();x.arc(rnd()*1000,rnd()*1000,r,0,Math.PI*2);x.fill();
-   }
- }
- x.globalAlpha=1;
- const data=c.toDataURL('image/png');
- textureImgCache.set(key,data);
- return data;
-}
-
-function addTextureLayer(kind,color,opacity=.42){
- const meta=textureKinds.find(t=>t.id===kind);
- addLayer(
-   textureImage(kind,color),
-   meta?.name||'Textura',
-   'textura',
-   {textureKind:kind,textureColor:color,opacity,initialW:58}
- );
-}
-
-function recolorTextureLayer(layer,color){
- if(!layer||layer.type!=='textura')return;
- const oldData=layer.data;
- layer.textureColor=color;
- layer.data=textureImage(layer.textureKind||'distressed',color);
- layerImgCache.delete(oldData);
- renderLayers();saveState();
- notify('Color de textura actualizado');
-}
-
-function hexToRgbObject(hex){
- const clean=(hex||'#ffffff').replace('#','');
- const n=parseInt(clean.length===3?clean.split('').map(c=>c+c).join(''):clean,16);
- return {r:(n>>16)&255,g:(n>>8)&255,b:n&255};
-}
-
-function styleImageLayer(layer,mode='original',tintColor='#ffffff',boost=100){
- if(!layer||layer.type!=='imagen')return;
- layer.originalData=layer.originalData||layer.data;
- layer.imageMode=mode;
- layer.imageTintColor=tintColor;
- layer.imageBoost=Math.max(60,Math.min(200,boost||100));
-
- if(mode==='original'){
-   const old=layer.data;
-   layer.data=layer.originalData;
-   layerImgCache.delete(old);
-   renderLayers();saveState();renderPanel();
-   notify('Imagen restaurada a color original');
-   return;
- }
-
- const srcData=layer.originalData;
- const im=new Image();
- im.onload=()=>{
-   const c=document.createElement('canvas');
-   c.width=im.naturalWidth||im.width;
-   c.height=im.naturalHeight||im.height;
-   const x=c.getContext('2d',{willReadFrequently:true});
-   x.drawImage(im,0,0);
-   const img=x.getImageData(0,0,c.width,c.height);
-   const d=img.data;
-   const rgb=hexToRgbObject(tintColor);
-   const gain=layer.imageBoost/100;
-
-   for(let i=0;i<d.length;i+=4){
-     if(d[i+3]===0)continue;
-     d[i]=rgb.r;
-     d[i+1]=rgb.g;
-     d[i+2]=rgb.b;
-     d[i+3]=Math.min(255,Math.round(d[i+3]*gain));
-   }
-
-   x.putImageData(img,0,0);
-   const old=layer.data;
-   layer.data=c.toDataURL('image/png');
-   layerImgCache.delete(old);
-   renderLayers();saveState();renderPanel();
-   notify('Imagen recoloreada para mayor contraste');
- };
- im.src=srcData;
-}
-
 function selected(){return layers.find(l=>l.id===selectedId)||null}
+function layerOpacityValue(l){return typeof l.opacity==='number'?Math.max(.05,Math.min(1,l.opacity)):1}
+function layerIntensityValue(l){return typeof l.intensity==='number'?Math.max(.6,Math.min(2.6,l.intensity)):1}
+function layerCanvasFilter(l){
+ const intensity=layerIntensityValue(l);
+ if(Math.abs(intensity-1)<0.01)return 'none';
+ const contrast=1+Math.max(0,intensity-1)*0.75;
+ const saturate=1+Math.max(0,intensity-1)*0.3;
+ return `brightness(${intensity}) contrast(${contrast}) saturate(${saturate})`;
+}
+function layerNeedsTint(l){return l&&l.type==='imagen'&&!!l.forceColor}
+function getTintedLayerPreviewData(l){
+ if(!layerNeedsTint(l))return l.data;
+ const key=[l.data,l.tintColor||'#ffffff'].join('|');
+ const cached=layerPreviewCache.get(key);
+ if(cached)return cached;
+ const im=layerImgCache.get(l.data);
+ if(!im||!im.complete||!im.naturalWidth)return l.data;
+ const c=document.createElement('canvas');
+ c.width=im.naturalWidth;c.height=im.naturalHeight;
+ const x=c.getContext('2d');
+ x.drawImage(im,0,0);
+ x.globalCompositeOperation='source-in';
+ x.fillStyle=l.tintColor||'#ffffff';
+ x.fillRect(0,0,c.width,c.height);
+ const out=c.toDataURL('image/png');
+ layerPreviewCache.set(key,out);
+ return out;
+}
+function applyLayerPreview(img,l){
+ img.src=layerNeedsTint(l)?getTintedLayerPreviewData(l):l.data;
+ img.style.opacity=String(layerOpacityValue(l));
+ img.style.filter=layerNeedsTint(l)?'none':layerCanvasFilter(l);
+}
+function drawLayerToContext(tx,l,im,x,y,w,h){
+ tx.save();
+ tx.imageSmoothingEnabled=true;
+ tx.imageSmoothingQuality='high';
+ tx.globalAlpha=layerOpacityValue(l);
+ tx.translate(x,y);
+ tx.rotate((l.rot||0)*Math.PI/180);
+ if(layerNeedsTint(l)){
+   const off=document.createElement('canvas');
+   off.width=im.naturalWidth||im.width;
+   off.height=im.naturalHeight||im.height;
+   const ox=off.getContext('2d');
+   ox.imageSmoothingEnabled=true;
+   ox.imageSmoothingQuality='high';
+   ox.drawImage(im,0,0,off.width,off.height);
+   ox.globalCompositeOperation='source-in';
+   ox.fillStyle=l.tintColor||'#ffffff';
+   ox.fillRect(0,0,off.width,off.height);
+   tx.drawImage(off,-w/2,-h/2,w,h);
+ } else {
+   tx.filter=layerCanvasFilter(l);
+   tx.drawImage(im,-w/2,-h/2,w,h);
+ }
+ tx.restore();
+}
 function renderLayers(){
  designArea.innerHTML='';
  visibleLayers().forEach(l=>{
    const el=document.createElement('div');el.className='designLayer'+(l.id===selectedId?' selected':'');el.dataset.id=l.id;
    el.style.left=l.x+'%';el.style.top=l.y+'%';el.style.width=l.w+'%';el.style.transform=`translate(-50%,-50%) rotate(${l.rot}deg)`;
-   el.innerHTML=`<img src="${l.data}" style="opacity:${l.opacity??1}"><span class="handle rotate"></span><span class="handle resize"></span><span class="handle delete">×</span><span class="dragLabel">Mover</span>`;
+   el.innerHTML=`<img src="${l.data}"><span class="handle rotate"></span><span class="handle resize"></span><span class="handle delete">×</span><span class="dragLabel">Mover</span>`;
+   applyLayerPreview(el.querySelector('img'),l);
    designArea.appendChild(el);bindLayer(el,l);
  });
  const done=$('#doneEditBtn');
@@ -1451,7 +1222,7 @@ function snapshotState(){
    currentFace,
    yaw3d,
    editorZoom,
-   layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face,textValue,fontValue,textColor,letterSpacing,opacity,textureKind,textureColor,originalData,imageMode,imageTintColor,imageBoost})=>({id,data,name,type,aspect,x,y,w,rot,face,textValue,fontValue,textColor,letterSpacing,opacity,textureKind,textureColor,originalData,imageMode,imageTintColor,imageBoost})),
+   layers:layers.map(({id,data,name,type,aspect,x,y,w,rot,face,textValue,fontValue,textColor,opacity,intensity,forceColor,tintColor})=>({id,data,name,type,aspect,x,y,w,rot,face,textValue,fontValue,textColor,opacity,intensity,forceColor,tintColor})),
    library,
    showGrid,
    backgroundMode,
@@ -1466,7 +1237,7 @@ function applyProjectState(state){
  currentFace=s.currentFace||'front';
  yaw3d=typeof s.yaw3d==='number'?s.yaw3d:(faceAngles[currentFace]??0);
  editorZoom=typeof s.editorZoom==='number'?s.editorZoom:1;
- layers=(s.layers||[]).map(l=>({...l,face:l.face||'front'}));
+ layers=(s.layers||[]).map(l=>({...l,face:l.face||'front',opacity:typeof l.opacity==='number'?l.opacity:1,intensity:typeof l.intensity==='number'?l.intensity:1,forceColor:!!l.forceColor,tintColor:l.tintColor||'#ffffff'}));
  library=s.library||[];
  showGrid=!!s.showGrid;
  backgroundMode=s.backgroundMode||'light';

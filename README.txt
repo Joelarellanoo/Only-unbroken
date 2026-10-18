@@ -1,16 +1,10 @@
-ONLY UNBROKEN · STUDIO V25
+ONLY UNBROKEN · STUDIO V21
 
-CORRECCIÓN IMPORTANTE
-- Arreglado el error que impedía Abrir proyecto y Crear diseño desde Inicio.
-- La causa era una función duplicada de conversión de color introducida en V24.
-- No se cambió el diseño del sitio, las prendas, proyectos, plantillas, texturas ni controles.
-- Se mantienen:
-  · guardado V21
-  · plantillas editables
-  · texturas
-  · opacidad de imágenes
-  · Tinta sólida
-  · Visible en negro
-  · Editor fácil y Modelo 3D
-
-V25 solo corrige el error de ejecución de V24.
+ARREGLO DE GUARDADO
+- No se cambió el diseño del Inicio, editor, hoodie, playera, plantillas ni controles.
+- Corrige el problema donde al refrescar podía reaparecer una copia vieja o vacía del proyecto.
+- La página ahora compara localStorage e IndexedDB y abre siempre la copia más reciente.
+- Los guardados de IndexedDB se hacen en orden para que un guardado viejo no pueda pisar uno nuevo.
+- Autosave más rápido durante la edición.
+- Guardado de seguridad cada 2 segundos y al ocultar/cerrar/refrescar la página.
+- Mantiene todos los arreglos de zoom y colores de V19/V20.
