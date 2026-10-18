@@ -2,9 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#090d1d">
-<title>ONLY UNBROKEN · Studio V14</title>
+<title>ONLY UNBROKEN · Studio V19</title>
 <style>
 :root{
   --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
@@ -273,6 +273,10 @@ body.menuOpen .headActions{visibility:hidden}
   .projectActions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}
 }
 
+
+/* V19 stability fixes only */
+html,body{overscroll-behavior:none}
+#artboard{touch-action:none}
 </style>
 </head>
 <body>
@@ -451,8 +455,60 @@ const RENDER_W=1060, RENDER_H=1380;
 
 const projectsKey='only_unbroken_projects_v14';
 const legacyStateKey='only_unbroken_turntable_v11';
+const studioDBName='only_unbroken_studio_v19';
+const studioDBStore='autosave';
 let projects=[];
 let currentProjectId=null;
+let autosaveTimer=null;
+
+function openStudioDB(){
+ return new Promise((resolve,reject)=>{
+   if(!('indexedDB' in window)){resolve(null);return}
+   const req=indexedDB.open(studioDBName,1);
+   req.onupgradeneeded=()=>{
+     const db=req.result;
+     if(!db.objectStoreNames.contains(studioDBStore))db.createObjectStore(studioDBStore);
+   };
+   req.onsuccess=()=>resolve(req.result);
+   req.onerror=()=>reject(req.error);
+ });
+}
+
+async function persistProjectsIDB(){
+ try{
+   const db=await openStudioDB();
+   if(!db)return;
+   await new Promise((resolve,reject)=>{
+     const tx=db.transaction(studioDBStore,'readwrite');
+     tx.objectStore(studioDBStore).put(projects,'projects');
+     tx.oncomplete=resolve;
+     tx.onerror=()=>reject(tx.error);
+     tx.onabort=()=>reject(tx.error);
+   });
+   db.close();
+ }catch(e){}
+}
+
+async function loadProjectsIDB(){
+ try{
+   const db=await openStudioDB();
+   if(!db)return null;
+   const result=await new Promise((resolve,reject)=>{
+     const tx=db.transaction(studioDBStore,'readonly');
+     const req=tx.objectStore(studioDBStore).get('projects');
+     req.onsuccess=()=>resolve(req.result||null);
+     req.onerror=()=>reject(req.error);
+   });
+   db.close();
+   return result;
+ }catch(e){return null}
+}
+
+function queueAutosave(delay=450){
+ if(!currentProjectId)return;
+ clearTimeout(autosaveTimer);
+ autosaveTimer=setTimeout(()=>saveState(),delay);
+}
 
 function hexToRgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
 function faceName(face){return ({front:'Frente',back:'Espalda',left:'Lado izquierdo',right:'Lado derecho'})[face]||'Frente'}
@@ -802,6 +858,7 @@ function renderLayers(){
 function syncLayer(l){
  const el=designArea.querySelector(`[data-id="${l.id}"]`);if(el){el.style.left=l.x+'%';el.style.top=l.y+'%';el.style.width=l.w+'%';el.style.transform=`translate(-50%,-50%) rotate(${l.rot}deg)`;}
  renderAll3D(l.face||currentFace);
+ queueAutosave();
 }
 function bindLayer(el,l){
  const resize=el.querySelector('.resize'),rotate=el.querySelector('.rotate'),del=el.querySelector('.delete');
@@ -919,11 +976,15 @@ function pointerDistance(){
 }
 artboard.addEventListener('pointerdown',e=>{
  if(viewMode!=='edit'||e.pointerType==='mouse')return;
- zoomPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ const onDesign=!!e.target.closest?.('.designLayer');
+ zoomPointers.set(e.pointerId,{x:e.clientX,y:e.clientY,onDesign});
  if(zoomPointers.size===2){
-   pinchActive=true;
-   pinchStartDistance=pointerDistance();
-   pinchStartZoom=editorZoom;
+   const pts=[...zoomPointers.values()];
+   if(!pts.some(p=>p.onDesign)){
+     pinchActive=true;
+     pinchStartDistance=pointerDistance();
+     pinchStartZoom=editorZoom;
+   }
  }
 },true);
 artboard.addEventListener('pointermove',e=>{
@@ -931,7 +992,7 @@ artboard.addEventListener('pointermove',e=>{
  zoomPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
  if(pinchActive&&zoomPointers.size>=2){
    const d=pointerDistance();
-   if(pinchStartDistance>0)setEditorZoom(pinchStartZoom*(d/pinchStartDistance),false);
+   if(pinchStartDistance>0){setEditorZoom(pinchStartZoom*(d/pinchStartDistance),false);queueAutosave();}
    e.preventDefault();
  }
 },true);
@@ -944,6 +1005,16 @@ const endZoomPointer=e=>{
 };
 artboard.addEventListener('pointerup',endZoomPointer,true);
 artboard.addEventListener('pointercancel',endZoomPointer,true);
+
+
+// iPad/Safari: block native browser zoom inside the mockup.
+// Custom editor zoom still works on empty mockup space.
+['gesturestart','gesturechange','gestureend'].forEach(type=>{
+ artboard.addEventListener(type,e=>e.preventDefault(),{passive:false});
+});
+artboard.addEventListener('touchmove',e=>{
+ if(e.touches&&e.touches.length>1)e.preventDefault();
+},{passive:false});
 
 designArea.addEventListener('pointerdown',e=>{
  if(e.target===designArea&&!pinchActive&&selectedId)finishEditing();
@@ -1028,9 +1099,12 @@ function applyProjectState(state){
 }
 
 function persistProjects(){
+ let localOk=true;
  try{localStorage.setItem(projectsKey,JSON.stringify(projects))}catch(e){
-   notify('No se pudo guardar. Puede faltar espacio en el navegador.');
+   localOk=false;
  }
+ persistProjectsIDB();
+ if(!localOk)notify('Guardado seguro activado. El navegador se quedó corto de espacio local.');
 }
 
 function saveState(){
@@ -1042,6 +1116,18 @@ function saveState(){
  p.updatedAt=Date.now();
  persistProjects();
 }
+
+
+function flushAutosave(){
+ clearTimeout(autosaveTimer);
+ if(currentProjectId)saveState();
+}
+window.addEventListener('pagehide',flushAutosave);
+window.addEventListener('beforeunload',flushAutosave);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='hidden')flushAutosave();
+});
+window.addEventListener('blur',()=>queueAutosave(0));
 
 function migrateLegacyProject(){
  try{
@@ -1192,8 +1278,19 @@ function showEditorShell(){
 
 document.querySelectorAll('[data-create-product]').forEach(b=>b.onclick=()=>createProject(b.dataset.createProduct));
 
-loadProjects();
-showDashboard();
+async function bootStudio(){
+ loadProjects();
+ const idbProjects=await loadProjectsIDB();
+ if(Array.isArray(idbProjects)&&idbProjects.length){
+   projects=idbProjects;
+   try{localStorage.setItem(projectsKey,JSON.stringify(projects))}catch(e){}
+ }else if(projects.length){
+   persistProjectsIDB();
+ }
+ showDashboard();
+}
+bootStudio();
+setInterval(()=>{if(currentProjectId)saveState()},4000);
 
 </script>
 </body>
