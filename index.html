@@ -574,14 +574,16 @@ function getTintedFace(face){
 
  const imageData=ctx.getImageData(0,0,RENDER_W,RENDER_H);
  const d=imageData.data,[r,g,b]=hexToRgb(garmentColor);
+ const productBrightness=currentProduct==='tee'?0.9:1;
+ const productDetail=currentProduct==='tee'?0.7:1;
  for(let i=0;i<d.length;i+=4){
    if(d[i+3]===0)continue;
    const lum=(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)/255;
-   const shade=Math.max(.3,Math.min(1.16,.2+lum*1.02));
-   const detail=(lum-.62)*18;
-   d[i]=Math.max(0,Math.min(255,r*shade+detail));
-   d[i+1]=Math.max(0,Math.min(255,g*shade+detail));
-   d[i+2]=Math.max(0,Math.min(255,b*shade+detail));
+   const shade=Math.max(.3,Math.min(currentProduct==='tee'?1.02:1.16,.2+lum*(currentProduct==='tee'?0.92:1.02)));
+   const detail=(lum-.62)*18*productDetail;
+   d[i]=Math.max(0,Math.min(255,(r*shade+detail)*productBrightness));
+   d[i+1]=Math.max(0,Math.min(255,(g*shade+detail)*productBrightness));
+   d[i+2]=Math.max(0,Math.min(255,(b*shade+detail)*productBrightness));
  }
  ctx.putImageData(imageData,0,0);
  faceBaseCache.set(cacheKey,{color:garmentColor,canvas:c});
@@ -777,6 +779,16 @@ function renderPanel(){
    </div>
    <div class="card"><div class="cardTitle">Streetwear</div><div class="templateGrid">
    ${['ONLY UNBROKEN','NEVER FOLD','KEEP GOING','RESILIENCE','NO LIMITS','STAY REAL'].map(t=>`<button class="template" data-template="${t}" style="background:#f3f4f7;color:${templateColor};border-color:#d5d9e3"><strong>${t}</strong></button>`).join('')}
+   </div></div>
+   <div class="card"><div class="cardTitle">Texturas desgaste</div><p style="margin:0 0 8px;color:#9aa7cc;font-size:10px">Agrégalas como capa para lograr efecto washed, vintage o cracked. Luego puedes cambiarles opacidad, intensidad y color desde Capas.</p><div class="templateGrid">
+   ${[
+     ['Vintage Fade','fade'],
+     ['Washed Grain','grain'],
+     ['Cracked Print','cracks'],
+     ['Speckles','speckle'],
+     ['Soft Distress','distress'],
+     ['Vintage Wash','wash']
+   ].map(([label,key])=>`<button class="template" data-texture="${key}" style="background:#151d3b;color:#eef3ff;border-color:#2d3969"><strong>${label}</strong></button>`).join('')}
    </div></div>`;
  } else if(activeTab==='settings'){
    h=`<h2>Ajustes</h2><p>Configura la mesa de trabajo.</p>
@@ -813,9 +825,11 @@ function renderPanel(){
  } else if(activeTool==='layers'){
    h=`<h2>Capas</h2><p>Aquí aparecen los diseños de todas las vistas. Toca uno para ir directo a él y editarlo.</p><div class="card">${layersHTML()}</div>
    ${selected()?`<div class="card"><div class="cardTitle">Seleccionado · ${faceName(selected().face||'front')}</div>
-   ${selected().type==='plantilla'?`<label>Color de la plantilla</label>
-   <input id="selectedTemplateColor" type="color" value="${selected().textColor||'#111111'}">
-   <div class="swatches" style="margin:8px 0 10px">${['#111111','#ffffff','#e6dfcf','#8f93a3','#314c7a','#6e4b58','#4c624f','#7a5c86'].map(c=>`<button class="swatch ${c===(selected().textColor||'#111111')?'active':''}" data-selected-template-color="${c}" style="background:${c}"></button>`).join('')}</div>`:''}
+   ${selected().type==='plantilla'?`<label>Texto de la plantilla</label>
+   <input id="selectedTemplateText" type="text" value="${(selected().textValue||'').replace(/"/g,'&quot;')}">
+   <div class="row"><div><label>Tipografía</label><select id="selectedTemplateFont"><option ${((selected().fontValue||'Impact')==='Impact')?'selected':''}>Impact</option><option ${((selected().fontValue||'Impact')==='Arial Black')?'selected':''}>Arial Black</option><option ${((selected().fontValue||'Impact')==='Georgia')?'selected':''}>Georgia</option><option ${((selected().fontValue||'Impact')==='Courier New')?'selected':''}>Courier New</option></select></div><div style="max-width:76px"><label>Color</label><input id="selectedTemplateColor" type="color" value="${selected().textColor||'#111111'}"></div></div>
+   <div class="swatches" style="margin:8px 0 10px">${['#111111','#ffffff','#e6dfcf','#8f93a3','#314c7a','#6e4b58','#4c624f','#7a5c86'].map(c=>`<button class="swatch ${c===(selected().textColor||'#111111')?'active':''}" data-selected-template-color="${c}" style="background:${c}"></button>`).join('')}</div>
+   <div class="row" style="margin:8px 0 10px"><button class="btn primary" id="applyTemplateText">Actualizar letras</button><button class="btn" id="resetTemplateText">Restablecer</button></div>`:''}
    ${selected().type==='imagen'?`<label>Opacidad</label><input id="layerOpacity" type="range" min="5" max="100" value="${Math.round((selected().opacity??1)*100)}">
    <label>Intensidad / visibilidad</label><input id="layerIntensity" type="range" min="60" max="260" value="${Math.round((selected().intensity??1)*100)}">
    <label>Color sólido para que resalte</label><input id="selectedImageTint" type="color" value="${selected().tintColor||'#ffffff'}">
@@ -852,6 +866,7 @@ function bindPanel(){
    if(tc)tc.oninput=e=>{templateColor=e.target.value;renderPanel()};
    panel.querySelectorAll('[data-template-color]').forEach(b=>b.onclick=()=>{templateColor=b.dataset.templateColor;renderPanel()});
    panel.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>addTextLayer(b.dataset.template,'Impact',templateColor,'plantilla'));
+   panel.querySelectorAll('[data-texture]').forEach(b=>b.onclick=()=>addTextureLayer(b.dataset.texture));
  }
  if(activeTab==='settings'){
    $('#toggleGrid').onclick=()=>{showGrid=!showGrid;$('#gridbg').style.display=showGrid?'block':'none';renderPanel()};
@@ -880,7 +895,16 @@ function bindPanel(){
      if(selected().type==='plantilla'){
        const sc=$('#selectedTemplateColor');
        if(sc)sc.oninput=e=>recolorTemplateLayer(selected(),e.target.value);
-       panel.querySelectorAll('[data-selected-template-color]').forEach(b=>b.onclick=()=>recolorTemplateLayer(selected(),b.dataset.selectedTemplateColor));
+       const st=$('#selectedTemplateText');
+       const sf=$('#selectedTemplateFont');
+       const applyTemplate=()=>updateTemplateLayer(selected(),(st&&st.value)||selected().textValue||selected().name||'ONLY UNBROKEN',(sf&&sf.value)||selected().fontValue||'Impact',(sc&&sc.value)||selected().textColor||'#111111');
+       if(st)st.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();applyTemplate()}};
+       if(sf)sf.onchange=applyTemplate;
+       const applyBtn=$('#applyTemplateText');
+       if(applyBtn)applyBtn.onclick=applyTemplate;
+       const resetBtn=$('#resetTemplateText');
+       if(resetBtn)resetBtn.onclick=()=>{ if(st)st.value=selected().name||'ONLY UNBROKEN'; if(sf)sf.value='Impact'; if(sc)sc.value='#111111'; updateTemplateLayer(selected(),selected().name||'ONLY UNBROKEN','Impact','#111111'); };
+       panel.querySelectorAll('[data-selected-template-color]').forEach(b=>b.onclick=()=>{recolorTemplateLayer(selected(),b.dataset.selectedTemplateColor); if(sc)sc.value=b.dataset.selectedTemplateColor;});
      }
      if(selected().type==='imagen'){
        const syncImageAdjust=()=>{layerPreviewCache.clear();renderLayers();if(activeTool==='layers')renderPanel();saveState()};
@@ -932,18 +956,59 @@ function addLayer(data,name,type,extra={}){
  };
  im.src=data;
 }
-function recolorTemplateLayer(layer,color){
+function updateTemplateLayer(layer,text,font,color){
  if(!layer||layer.type!=='plantilla')return;
  const oldData=layer.data;
- layer.textColor=color;
- layer.textValue=layer.textValue||layer.name||'ONLY UNBROKEN';
- layer.fontValue=layer.fontValue||'Impact';
- layer.data=textImage(layer.textValue,layer.fontValue,color);
+ layer.textValue=(text||layer.textValue||layer.name||'ONLY UNBROKEN').slice(0,60);
+ layer.fontValue=font||layer.fontValue||'Impact';
+ layer.textColor=color||layer.textColor||'#111111';
+ layer.name=layer.textValue||'Plantilla';
+ layer.data=textImage(layer.textValue,layer.fontValue,layer.textColor);
  layerImgCache.delete(oldData);
  renderLayers();
  saveState();
  if(activeTool==='layers')renderPanel();
+ notify('Plantilla actualizada');
+}
+function recolorTemplateLayer(layer,color){
+ if(!layer||layer.type!=='plantilla')return;
+ updateTemplateLayer(layer,layer.textValue||layer.name||'ONLY UNBROKEN',layer.fontValue||'Impact',color);
  notify('Color de plantilla actualizado');
+}
+function textureImage(kind='grain'){
+ const c=document.createElement('canvas');
+ c.width=2200;c.height=2200;
+ const x=c.getContext('2d');
+ x.clearRect(0,0,c.width,c.height);
+ const rnd=(a,b)=>a+Math.random()*(b-a);
+ const dot=(px,py,r,a)=>{x.beginPath();x.arc(px,py,r,0,Math.PI*2);x.fillStyle=`rgba(0,0,0,${a})`;x.fill();};
+ if(kind==='fade' || kind==='wash'){
+   const g=x.createRadialGradient(c.width/2,c.height/2,260,c.width/2,c.height/2,1280);
+   g.addColorStop(0,'rgba(0,0,0,0)');
+   g.addColorStop(1,'rgba(0,0,0,'+(kind==='wash'?'0.28':'0.18')+')');
+   x.fillStyle=g;x.fillRect(0,0,c.width,c.height);
+ }
+ if(kind==='grain' || kind==='wash' || kind==='distress'){
+   for(let i=0;i<(kind==='distress'?2200:1500);i++) dot(rnd(0,c.width),rnd(0,c.height),rnd(.8,2.6),rnd(.04,.16));
+ }
+ if(kind==='speckle' || kind==='distress'){
+   for(let i=0;i<520;i++){const px=rnd(0,c.width),py=rnd(0,c.height);x.fillStyle=`rgba(0,0,0,${rnd(.10,.24)})`;x.fillRect(px,py,rnd(6,24),rnd(2,10));}
+ }
+ if(kind==='cracks' || kind==='distress'){
+   x.lineWidth=2.2;x.lineCap='round';
+   for(let i=0;i<90;i++){
+     x.beginPath();
+     let px=rnd(80,c.width-80),py=rnd(80,c.height-80);x.moveTo(px,py);
+     const steps=3+Math.floor(Math.random()*5);
+     for(let s=0;s<steps;s++){px+=rnd(-120,120);py+=rnd(-90,90);x.lineTo(px,py)}
+     x.strokeStyle=`rgba(0,0,0,${rnd(.05,.14)})`;x.stroke();
+   }
+ }
+ return c.toDataURL('image/png');
+}
+function addTextureLayer(kind='grain'){
+ const labels={fade:'Vintage Fade',grain:'Washed Grain',cracks:'Cracked Print',speckle:'Speckles',distress:'Soft Distress',wash:'Vintage Wash'};
+ addLayer(textureImage(kind),labels[kind]||'Textura','imagen',{opacity:kind==='wash'?0.28:0.22,intensity:1,forceColor:false,tintColor:'#ffffff'});
 }
 function selected(){return layers.find(l=>l.id===selectedId)||null}
 function layerOpacityValue(l){return typeof l.opacity==='number'?Math.max(.05,Math.min(1,l.opacity)):1}
