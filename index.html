@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#090d1d">
-<title>ONLY UNBROKEN · Studio V21</title>
+<title>ONLY UNBROKEN · Studio V21 Acabados</title>
 <style>
 :root{
   --bg:#070b17; --panel:#0d1430; --panel2:#111a3b; --line:#283463;
@@ -76,7 +76,8 @@ header{
   width:min(63%,560px);aspect-ratio:530/690;
   filter:drop-shadow(0 26px 18px #27304425)
 }
-#garmentCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:auto}
+#garmentCanvas,#finishCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:auto}
+#finishCanvas{pointer-events:none}
 #designArea{position:absolute;inset:0;touch-action:none}
 .designLayer{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%) rotate(0deg);touch-action:none}
 .designLayer img{display:block;width:100%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none;image-rendering:auto;backface-visibility:hidden}
@@ -380,6 +381,7 @@ html,body{overscroll-behavior:none}
       <div class="garmentWrap" id="garmentWrap">
         <canvas id="garmentCanvas" width="1060" height="1380"></canvas>
         <div id="designArea"></div>
+        <canvas id="finishCanvas" width="1060" height="1380"></canvas>
       </div>
     </div>
     
@@ -403,7 +405,7 @@ html,body{overscroll-behavior:none}
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const panel=$('#panel'), designArea=$('#designArea'), artboard=$('#artboard'), garmentWrap=$('#garmentWrap'), garmentCanvas=$('#garmentCanvas'), garmentCtx=garmentCanvas.getContext('2d');
+const panel=$('#panel'), designArea=$('#designArea'), artboard=$('#artboard'), garmentWrap=$('#garmentWrap'), garmentCanvas=$('#garmentCanvas'), garmentCtx=garmentCanvas.getContext('2d'), finishCanvas=$('#finishCanvas'), finishCtx=finishCanvas.getContext('2d');
 const local3d=$('#local3d'), local3dScene=$('#local3dScene'), hoodieCube=$('#hoodieCube');
 const dashboard=$('#dashboard'), workspace=$('#workspace'), projectsGrid=$('#projectsGrid');
 
@@ -452,7 +454,9 @@ const faceCanvas3D={front:$('#face3d-front'),back:$('#face3d-back'),left:$('#fac
 const layerImgCache=new Map();
 const layerPreviewCache=new Map();
 const faceBaseCache=new Map();
+const finishOverlayCache=new Map();
 const RENDER_W=1060, RENDER_H=1380;
+const finishLabels={clean:'Limpia',softWash:'Deslavado suave',heavyWash:'Deslavado fuerte',vintage:'Vintage',used:'Usada',distressed:'Gastada',sideRips:'Roturas laterales',sleeveRips:'Roturas en mangas',hemRips:'Dobladillo roto',neckWorn:'Cuello gastado'};
 
 const projectsKey='only_unbroken_projects_v14';
 const projectsMetaKey='only_unbroken_projects_v21_meta';
@@ -463,6 +467,8 @@ let projects=[];
 let currentProjectId=null;
 let autosaveTimer=null;
 let templateColor='#111111';
+let garmentFinish='clean';
+let finishStrength=1;
 let pendingIDBSave=null;
 let idbSaving=false;
 
@@ -597,6 +603,138 @@ function renderGarment(){
  garmentCtx.imageSmoothingQuality='high';
  garmentCtx.clearRect(0,0,garmentCanvas.width,garmentCanvas.height);
  garmentCtx.drawImage(base,0,0,garmentCanvas.width,garmentCanvas.height);
+ renderFinishOverlay();
+}
+
+function hashNoise(v1,v2){
+ const s=Math.sin(v1*12.9898+v2*78.233)*43758.5453123;
+ return s-Math.floor(s);
+}
+function finishCacheKey(face){
+ return [currentProduct,face,garmentFinish,finishStrength.toFixed(2),backgroundMode].join('|');
+}
+function holeOverlayColor(){
+ return backgroundMode==='light'?'rgba(244,246,250,0.96)':'rgba(16,23,47,0.96)';
+}
+function drawWearPattern(ctx,W,H,kind){
+ const amt=Math.max(.2,Math.min(1.6,finishStrength));
+ ctx.save();
+ if(kind==='softWash' || kind==='heavyWash' || kind==='vintage' || kind==='used' || kind==='distressed'){
+   const outer=kind==='heavyWash'?0.18:kind==='softWash'?0.10:kind==='vintage'?0.13:kind==='used'?0.11:0.15;
+   const veil=ctx.createRadialGradient(W*.5,H*.52,Math.min(W,H)*0.12,W*.5,H*.52,Math.min(W,H)*0.62);
+   veil.addColorStop(0,'rgba(255,255,255,0)');
+   veil.addColorStop(1,`rgba(255,255,255,${(outer*amt).toFixed(3)})`);
+   ctx.fillStyle=veil;
+   ctx.fillRect(0,0,W,H);
+   const fade=ctx.createLinearGradient(0,H*.08,0,H*.94);
+   fade.addColorStop(0,'rgba(255,255,255,0.04)');
+   fade.addColorStop(.5,`rgba(255,255,255,${(0.02*amt).toFixed(3)})`);
+   fade.addColorStop(1,'rgba(0,0,0,0.04)');
+   ctx.fillStyle=fade;
+   ctx.fillRect(0,0,W,H);
+   const step=kind==='heavyWash'?8:10;
+   for(let y=0;y<H;y+=step){
+     for(let x=0;x<W;x+=step){
+       const n=hashNoise((x+37)/step,(y+19)/step);
+       if(n>.62){
+         const alpha=(n-.62)*(kind==='heavyWash'?0.11:0.07)*amt;
+         ctx.fillStyle=`rgba(255,255,255,${alpha.toFixed(3)})`;
+         ctx.fillRect(x,y,step,step);
+       }else if(n<.10 && kind!=='softWash'){
+         const alpha=(.10-n)*(kind==='distressed'?0.13:0.08)*amt;
+         ctx.fillStyle=`rgba(0,0,0,${alpha.toFixed(3)})`;
+         ctx.fillRect(x,y,step,step);
+       }
+     }
+   }
+   ctx.strokeStyle=`rgba(255,255,255,${(kind==='distressed'?0.13:0.09)*amt})`;
+   ctx.lineWidth=kind==='distressed'?6:4;
+   ctx.beginPath();
+   ctx.moveTo(W*.28,H*.13);ctx.quadraticCurveTo(W*.5,H*.08,W*.72,H*.13);
+   ctx.moveTo(W*.13,H*.27);ctx.quadraticCurveTo(W*.11,H*.45,W*.17,H*.72);
+   ctx.moveTo(W*.87,H*.27);ctx.quadraticCurveTo(W*.89,H*.45,W*.83,H*.72);
+   ctx.moveTo(W*.33,H*.93);ctx.quadraticCurveTo(W*.5,H*.95,W*.67,H*.93);
+   ctx.stroke();
+   if(kind==='vintage' || kind==='used'){
+     ctx.fillStyle=`rgba(214,192,148,${(kind==='vintage'?0.07:0.04)*amt})`;
+     ctx.fillRect(0,0,W,H);
+   }
+ }
+ ctx.restore();
+}
+function drawJaggedPatch(ctx,cx,cy,rx,ry,seed){
+ const pts=8;
+ ctx.beginPath();
+ for(let i=0;i<pts;i++){
+   const a=(Math.PI*2*i/pts)-Math.PI/2;
+   const n=.72+hashNoise(seed,i)*.42;
+   const px=cx+Math.cos(a)*rx*n;
+   const py=cy+Math.sin(a)*ry*(.82+hashNoise(seed+4,i)*.38);
+   if(i===0)ctx.moveTo(px,py); else ctx.lineTo(px,py);
+ }
+ ctx.closePath();
+ ctx.fillStyle=holeOverlayColor();
+ ctx.fill();
+ ctx.lineWidth=2.2;
+ ctx.strokeStyle='rgba(43,46,58,0.28)';
+ ctx.stroke();
+}
+function drawRipMarks(ctx,W,H,kind){
+ const amt=Math.max(.55,Math.min(1.7,finishStrength));
+ ctx.save();
+ ctx.strokeStyle='rgba(255,255,255,'+(0.12*amt)+')';
+ ctx.lineWidth=3.5;
+ if(kind==='sideRips'){
+   drawJaggedPatch(ctx,W*.25,H*.58,28*amt,20*amt,11);
+   drawJaggedPatch(ctx,W*.75,H*.56,30*amt,22*amt,17);
+   ctx.beginPath();ctx.moveTo(W*.2,H*.49);ctx.lineTo(W*.24,H*.63);ctx.moveTo(W*.8,H*.47);ctx.lineTo(W*.76,H*.62);ctx.stroke();
+ }
+ if(kind==='sleeveRips'){
+   drawJaggedPatch(ctx,W*.17,H*.33,26*amt,16*amt,23);
+   drawJaggedPatch(ctx,W*.83,H*.33,26*amt,16*amt,29);
+   ctx.beginPath();ctx.moveTo(W*.11,H*.28);ctx.lineTo(W*.2,H*.36);ctx.moveTo(W*.89,H*.28);ctx.lineTo(W*.8,H*.36);ctx.stroke();
+ }
+ if(kind==='hemRips'){
+   drawJaggedPatch(ctx,W*.38,H*.91,26*amt,14*amt,33);
+   drawJaggedPatch(ctx,W*.62,H*.92,24*amt,12*amt,37);
+   ctx.beginPath();ctx.moveTo(W*.3,H*.92);ctx.lineTo(W*.47,H*.94);ctx.moveTo(W*.53,H*.94);ctx.lineTo(W*.7,H*.92);ctx.stroke();
+ }
+ if(kind==='neckWorn'){
+   ctx.beginPath();ctx.arc(W*.5,H*.125,W*.095,Math.PI*.08,Math.PI*.92);ctx.stroke();
+   drawJaggedPatch(ctx,W*.5,H*.14,18*amt,9*amt,41);
+ }
+ ctx.restore();
+}
+function buildFinishOverlay(face){
+ const key=finishCacheKey(face);
+ const cached=finishOverlayCache.get(key);
+ if(cached)return cached;
+ const mask=getTintedFace(face);
+ if(!mask)return null;
+ const c=document.createElement('canvas');
+ c.width=RENDER_W;c.height=RENDER_H;
+ const x=c.getContext('2d');
+ if(garmentFinish!=='clean'){
+   drawWearPattern(x,RENDER_W,RENDER_H,garmentFinish);
+   x.globalCompositeOperation='destination-in';
+   x.drawImage(mask,0,0,RENDER_W,RENDER_H);
+   x.globalCompositeOperation='source-over';
+   if(['sideRips','sleeveRips','hemRips','neckWorn'].includes(garmentFinish)) drawRipMarks(x,RENDER_W,RENDER_H,garmentFinish);
+ }
+ finishOverlayCache.set(key,c);
+ return c;
+}
+function renderFinishOverlay(){
+ finishCtx.clearRect(0,0,finishCanvas.width,finishCanvas.height);
+ if(garmentFinish==='clean')return;
+ const ov=buildFinishOverlay(currentFace);
+ if(ov)finishCtx.drawImage(ov,0,0,finishCanvas.width,finishCanvas.height);
+}
+function applyFinishToContext(tx,W,H,face){
+ if(garmentFinish==='clean')return;
+ const ov=buildFinishOverlay(face);
+ if(!ov)return;
+ tx.drawImage(ov,0,0,W,H);
 }
 
 Object.entries(productImages).forEach(([productId,set])=>{
@@ -640,6 +778,7 @@ function tintGarmentToCanvas(face,targetCanvas){
 
    drawLayerToContext(tx,l,im,x,y,w,h);
  });
+ applyFinishToContext(tx,W,H,face);
 }
 
 function renderAll3D(faceOnly=null){
@@ -772,24 +911,21 @@ function renderPanel(){
    <div class="card"><div class="cardTitle">Tus archivos</div><div class="libraryGrid" id="libraryGrid">${libraryHTML()}</div></div>`;
  } else if(activeTab==='templates'){
    const tsw=['#111111','#ffffff','#e6dfcf','#8f93a3','#314c7a','#6e4b58','#4c624f','#7a5c86'];
-   h=`<h2>Plantillas</h2><p>Elige el color y luego toca una plantilla. Después también puedes cambiarle el color desde Capas.</p>
+   const finishOptions=[['clean','Limpia'],['softWash','Deslavado suave'],['heavyWash','Deslavado fuerte'],['vintage','Vintage'],['used','Usada'],['distressed','Gastada'],['sideRips','Roturas laterales'],['sleeveRips','Roturas en mangas'],['hemRips','Dobladillo roto'],['neckWorn','Cuello gastado']];
+   h=`<h2>Plantillas</h2><p>Elige una plantilla y luego, si quieres, cambia sus letras desde Capas. Aquí también puedes aplicar acabados automáticos a la prenda.</p>
    <div class="card"><div class="cardTitle">Color de la plantilla</div>
    <input id="templateColor" type="color" value="${templateColor}">
    <div class="swatches" style="margin-top:10px">${tsw.map(c=>`<button class="swatch ${c===templateColor?'active':''}" data-template-color="${c}" style="background:${c}"></button>`).join('')}</div>
    </div>
    <div class="card"><div class="cardTitle">Streetwear</div><div class="templateGrid">
    ${['ONLY UNBROKEN','NEVER FOLD','KEEP GOING','RESILIENCE','NO LIMITS','STAY REAL'].map(t=>`<button class="template" data-template="${t}" style="background:#f3f4f7;color:${templateColor};border-color:#d5d9e3"><strong>${t}</strong></button>`).join('')}
-   </div></div>
-   <div class="card"><div class="cardTitle">Texturas desgaste</div><p style="margin:0 0 8px;color:#9aa7cc;font-size:10px">Agrégalas como capa para lograr efecto washed, vintage o cracked. Luego puedes cambiarles opacidad, intensidad y color desde Capas.</p><div class="templateGrid">
-   ${[
-     ['Vintage Fade','fade'],
-     ['Washed Grain','grain'],
-     ['Cracked Print','cracks'],
-     ['Speckles','speckle'],
-     ['Soft Distress','distress'],
-     ['Vintage Wash','wash']
-   ].map(([label,key])=>`<button class="template" data-texture="${key}" style="background:#151d3b;color:#eef3ff;border-color:#2d3969"><strong>${label}</strong></button>`).join('')}
-   </div></div>`;
+   </div><div class="smallMuted" style="text-align:left;margin-top:8px">Tip: después de agregar una plantilla, entra a <b>Capas</b> para cambiarle las letras, tipografía y color.</div></div>
+   <div class="card"><div class="cardTitle">Acabado de la prenda</div><p style="margin:0 0 8px;color:#9aa7cc;font-size:10px">Estos acabados se aplican solos sobre la playera o sudadera, también en 3D.</p><div class="templateGrid">
+   ${finishOptions.map(([key,label])=>`<button class="template" data-finish="${key}" style="background:${garmentFinish===key?'#e9ecf6':'#151d3b'};color:${garmentFinish===key?'#151b2d':'#eef3ff'};border-color:${garmentFinish===key?'#d5dbe8':'#2d3969'}"><strong>${label}</strong></button>`).join('')}
+   </div>
+   <label style="margin-top:10px">Intensidad del acabado</label>
+   <input id="finishStrength" type="range" min="60" max="180" value="${Math.round(finishStrength*100)}" ${garmentFinish==='clean'?'disabled':''}>
+   <div class="smallMuted" style="text-align:left;margin-top:8px">Acabado actual: <b>${finishLabels[garmentFinish]||'Limpia'}</b></div></div>`;
  } else if(activeTab==='settings'){
    h=`<h2>Ajustes</h2><p>Configura la mesa de trabajo.</p>
    <div class="card"><div class="cardTitle">Vista sincronizada</div>
@@ -866,16 +1002,18 @@ function bindPanel(){
    if(tc)tc.oninput=e=>{templateColor=e.target.value;renderPanel()};
    panel.querySelectorAll('[data-template-color]').forEach(b=>b.onclick=()=>{templateColor=b.dataset.templateColor;renderPanel()});
    panel.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>addTextLayer(b.dataset.template,'Impact',templateColor,'plantilla'));
-   panel.querySelectorAll('[data-texture]').forEach(b=>b.onclick=()=>addTextureLayer(b.dataset.texture));
+   const fs=$('#finishStrength');
+   if(fs)fs.oninput=e=>{finishStrength=Math.max(.6,Math.min(1.8,(+e.target.value||100)/100));finishOverlayCache.clear();renderGarment();renderAll3D();saveState();renderPanel()};
+   panel.querySelectorAll('[data-finish]').forEach(b=>b.onclick=()=>{garmentFinish=b.dataset.finish;finishOverlayCache.clear();renderGarment();renderAll3D();saveState();renderPanel();notify('Acabado aplicado · '+(finishLabels[garmentFinish]||'Limpia'))});
  }
  if(activeTab==='settings'){
    $('#toggleGrid').onclick=()=>{showGrid=!showGrid;$('#gridbg').style.display=showGrid?'block':'none';renderPanel()};
-   $('#toggleBg').onclick=()=>{backgroundMode=backgroundMode==='light'?'dark':'light';$('#artboard').style.background=backgroundMode==='light'?'radial-gradient(circle at 50% 42%,#fff 0,#f4f5f9 58%,#e9ebf2 100%)':'radial-gradient(circle at 50% 42%,#29314b 0,#141b31 68%,#0f1426 100%)';renderPanel()};
+   $('#toggleBg').onclick=()=>{backgroundMode=backgroundMode==='light'?'dark':'light';$('#artboard').style.background=backgroundMode==='light'?'radial-gradient(circle at 50% 42%,#fff 0,#f4f5f9 58%,#e9ebf2 100%)':'radial-gradient(circle at 50% 42%,#29314b 0,#141b31 68%,#0f1426 100%)';finishOverlayCache.clear();renderFinishOverlay();renderPanel()};
    $('#clearAll').onclick=()=>{layers=[];selectedId=null;renderLayers();saveState();renderPanel();notify('Diseños eliminados')};
  }
  if(activeTool==='colors'&&activeTab==='design'){
-   $('#hoodColor').oninput=e=>{garmentColor=e.target.value;faceBaseCache.clear();renderGarment();renderAll3D();saveState()};
-   panel.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{garmentColor=b.dataset.color;faceBaseCache.clear();renderGarment();renderAll3D();saveState();renderPanel()});
+   $('#hoodColor').oninput=e=>{garmentColor=e.target.value;faceBaseCache.clear();finishOverlayCache.clear();renderGarment();renderAll3D();saveState()};
+   panel.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{garmentColor=b.dataset.color;faceBaseCache.clear();finishOverlayCache.clear();renderGarment();renderAll3D();saveState();renderPanel()});
  }
  if(activeTool==='text'&&activeTab==='design') $('#addText').onclick=()=>addTextLayer($('#textValue').value,$('#fontValue').value,$('#textColor').value);
  if(activeTool==='images'&&activeTab==='design') $('#imgUpload').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{library.push({name:f.name,data:r.result});addLayer(r.result,f.name,'imagen');saveState()};r.readAsDataURL(f)};
@@ -1262,7 +1400,7 @@ function exportPNG(){
  const gw=1020,gh=1020*garmentCanvas.height/garmentCanvas.width,gx=(1800-gw)/2,gy=(1800-gh)/2;
  x.drawImage(g,gx,gy,gw,gh);
  const jobs=visibleLayers().map(l=>new Promise(res=>{const im=new Image();im.onload=()=>{const w=l.w/100*gw,h=w/l.aspect,px=gx+l.x/100*gw,py=gy+l.y/100*gh;x.save();x.translate(px,py);x.rotate(l.rot*Math.PI/180);x.drawImage(im,-w/2,-h/2,w,h);x.restore();res()};im.src=l.data}));
- Promise.all(jobs).then(()=>{const a=document.createElement('a');a.download=`only-unbroken-${currentProduct}-${currentFace}.png`;a.href=c.toDataURL('image/png');a.click();notify('PNG exportado')})
+ Promise.all(jobs).then(()=>{applyFinishToContext(x,c.width,c.height,currentFace);const a=document.createElement('a');a.download=`only-unbroken-${currentProduct}-${currentFace}.png`;a.href=c.toDataURL('image/png');a.click();notify('PNG exportado')})
 }
 
 function defaultProjectState(productId){
@@ -1276,6 +1414,8 @@ function defaultProjectState(productId){
    library:[],
    showGrid:false,
    backgroundMode:'light',
+   garmentFinish:'clean',
+   finishStrength:1,
    seq:1
  };
 }
@@ -1291,6 +1431,8 @@ function snapshotState(){
    library,
    showGrid,
    backgroundMode,
+   garmentFinish,
+   finishStrength,
    seq
  };
 }
@@ -1306,9 +1448,12 @@ function applyProjectState(state){
  library=s.library||[];
  showGrid=!!s.showGrid;
  backgroundMode=s.backgroundMode||'light';
+ garmentFinish=s.garmentFinish||'clean';
+ finishStrength=typeof s.finishStrength==='number'?s.finishStrength:1;
  seq=s.seq||100;
  selectedId=null;
  faceBaseCache.clear();
+ finishOverlayCache.clear();
 
  $('#gridbg').style.display=showGrid?'block':'none';
  $('#artboard').style.background=backgroundMode==='light'
